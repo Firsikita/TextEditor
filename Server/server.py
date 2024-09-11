@@ -1,10 +1,21 @@
 import asyncio
 import websockets
 import signal
+import os
+import json
 
 clients = set()
 server = None
 
+async def handle_message(websocket, message):
+    if message.startswith("GET_FILES"):
+        path = message[len("GET_FILES "):]  # Получаем путь из сообщения
+        if os.path.isdir(path):
+            files = os.listdir(path)
+            # Отправляем список файлов клиенту в формате JSON
+            await websocket.send(json.dumps(files))
+        else:
+            await websocket.send("Invalid path")
 
 async def echo(websocket, path):
     # Добавляем клиента
@@ -13,6 +24,7 @@ async def echo(websocket, path):
 
     try:
         async for message in websocket:
+            await handle_message(websocket, message)
             # Рассылаем сообщение всем подключенным клиентам
             for client in clients:
                 if client != websocket:
