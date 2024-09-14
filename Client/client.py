@@ -1,33 +1,46 @@
 import asyncio
 import websockets
+import json
 
-async def connect_to_server():
-    uri = "ws://192.168.0.100:8765"
+class Client:
+    def __init__(self, uri):
+        self.uri = uri
 
-    try:
-        async with websockets.connect(uri) as websocket:
-            print("Connected to server.")
+    async def request_files(self, path):
+        async with websockets.connect(self.uri) as websocket:
+            await websocket.send(f"GET_FILES {path}")
+            response = await websocket.recv()
+            files = json.loads(response)
+            return files
 
-            while True:
-                # Получаем сообщение от пользователя
-                message = input("Enter message to send to the server: ")
+    async def request_file_content(self, file_path):
+        async with websockets.connect(self.uri) as websocket:
+            await websocket.send(f"GET_FILE_CONTENT {file_path}")
+            response = await websocket.recv()
 
-                if message.lower() == "exit":
-                    print("Exiting...")
-                    break
+            try:
+                data = json.loads(response)
+                if "error" in data:
+                    return f"Error: {data['error']}"
+                return data.get("content", "")
+            except json.JSONDecodeError:
+                return response
 
-                # Отправляем сообщение на сервер
-                await websocket.send(message)
+    async def send_file_content(self, file_path, content):
+        async with websockets.connect(self.uri) as websocket:
+            message = json.dumps({'file_path': file_path, 'content': content})
+            await websocket.send(f"SAVE_CONTENT {message}")
+            response = await websocket.recv()
+            return response
 
-                # Получаем ответ от сервера
-                try:
-                    response = await websocket.recv()
-                    print(f"Received from server: {response}")
-                except websockets.ConnectionClosed:
-                    print("Server has been stopped or closed the connection.")
-                    break  # Выходим из цикла при закрытии соединения
+    async def send_new_file(self, file_path):
+        async with websockets.connect(self.uri) as websocket:
+            await websocket.send(f"NEW_FILE {json.dumps({'file_path': file_path})}")
+            response = await websocket.recv()
+            return response
 
-    except (websockets.exceptions.ConnectionClosedError, websockets.exceptions.InvalidURI):
-        print("Unable to connect to the server. It may be down or the URI may be incorrect.")
-
-asyncio.get_event_loop().run_until_complete(connect_to_server())
+    async def delete_file(self, file_path):
+        async with websockets.connect(self.uri) as websocket:
+            await websocket.send(f"DELETE_FILE {json.dumps({'file_path': file_path})}")
+            response = await websocket.recv()
+            return response
