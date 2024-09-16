@@ -6,16 +6,19 @@ import os
 
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget, QSplitter, QTreeView, QPushButton, QHBoxLayout, QInputDialog, QMenu, QWidgetAction
 from PyQt6.QtGui import QStandardItemModel, QStandardItem
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 
 from Client.client import Client
 
 class TextEditor(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.client = Client("ws://192.168.0.28:8765")
+        self.client = Client("ws://192.168.0.100:8765")
         self.init_ui()
         self.current_file = None
+
+        self.client.start()
+
 
     def init_ui(self):
         self.setWindowTitle('Multiplayer Text Editor')
@@ -109,7 +112,12 @@ class TextEditor(QMainWindow):
         file_name = item.text()
         self.current_file = file_name
 
-        asyncio.run(self.load_file_content(file_name))
+        if 'txt' in file_name:
+            asyncio.run(self.load_file_content(file_name))
+        else:
+            if self.file_tree.isExpanded(index):
+                self.file_tree.collapse(index)
+            else: self.file_tree.expand(index)
 
     def create_new_file(self):
         file_name, ok = QInputDialog.getText(self, 'Создание нового файла', 'Введите имя файла:')

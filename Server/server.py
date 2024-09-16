@@ -90,7 +90,7 @@ async def echo(websocket, path):
 
 async def main():
     global server
-    server = await websockets.serve(echo, "192.168.0.28", 8765)  # Замените на нужный IP
+    server = await websockets.serve(echo, "192.168.0.100", 8765)  # Замените на нужный IP
     print("Server started")
 
     loop = asyncio.get_running_loop()
