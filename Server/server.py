@@ -7,12 +7,16 @@ import json
 clients = set()
 server = None
 
+
 async def handle_message(websocket, message):
+    print("get files")
     if message.startswith("GET_FILES"):
         path = message[len("GET_FILES "):]
         if os.path.isdir(path):
             files = os.listdir(path)
+            print("start send")
             await websocket.send(json.dumps(files))
+            print(files)
         else:
             await websocket.send(json.dumps({"error": "Invalid path"}))
 
@@ -22,12 +26,11 @@ async def handle_message(websocket, message):
             if os.path.isfile(file_path):
                 with open(file_path, 'r', encoding='utf-8') as file:
                     content = file.read()
-                await websocket.send(content)
+                await websocket.send(json.dumps({"content": content}))
             else:
                 await websocket.send(json.dumps({"error": "File not found"}))
         except Exception as e:
             await websocket.send(json.dumps({"error": str(e)}))
-
 
     elif message.startswith("SAVE_CONTENT"):
         try:
@@ -44,7 +47,6 @@ async def handle_message(websocket, message):
                 await websocket.send(json.dumps({"error": "File not found"}))
         except Exception as e:
             await websocket.send(json.dumps({"error": str(e)}))
-
 
     elif message.startswith("NEW_FILE"):
         try:
@@ -78,9 +80,14 @@ async def echo(websocket, path):
     try:
         async for message in websocket:
             await handle_message(websocket, message)
+
             for client in clients:
                 if client != websocket:
-                    await client.send(message)
+                    try:
+                        await client.send(message)
+                    except Exception as e:
+                        print(f"Error sending message to a client: {e}")
+
     except websockets.ConnectionClosed:
         print("User disconnected.")
     finally:
@@ -90,18 +97,11 @@ async def echo(websocket, path):
 
 async def main():
     global server
-    server = await websockets.serve(echo, "192.168.0.100", 8765)  # Замените на нужный IP
+    server = await websockets.serve(echo, "192.168.0.100", 8765)
     print("Server started")
 
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
-
-    def signal_handler(sig, frame):
-        print("Signal received, stopping server...")
-        stop_event.set()
-
-    loop.add_signal_handler(signal.SIGINT, signal_handler, signal.SIGINT, None)
-    loop.add_signal_handler(signal.SIGTERM, signal_handler, signal.SIGTERM, None)
 
     await stop_event.wait()
     server.close()
