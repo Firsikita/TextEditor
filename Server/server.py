@@ -9,6 +9,11 @@ server = None
 
 
 async def handle_message(websocket, message):
+    if message.startswith("PING"):
+        #print("Pong")
+        await websocket.send("PONG")
+        return
+
     print("get files")
     if message.startswith("GET_FILES"):
         path = message[len("GET_FILES "):]
@@ -80,14 +85,6 @@ async def echo(websocket, path):
     try:
         async for message in websocket:
             await handle_message(websocket, message)
-
-            for client in clients:
-                if client != websocket:
-                    try:
-                        await client.send(message)
-                    except Exception as e:
-                        print(f"Error sending message to a client: {e}")
-
     except websockets.ConnectionClosed:
         print("User disconnected.")
     finally:
@@ -103,10 +100,16 @@ async def main():
     loop = asyncio.get_running_loop()
     stop_event = asyncio.Event()
 
-    await stop_event.wait()
-    server.close()
-    await server.wait_closed()
-    print("Server stopped")
+    try:
+        await asyncio.Future()  # Бесконечная задача
+    finally:
+        await stop_server()
+
+async def stop_server():
+    if server:
+        server.close()
+        await server.wait_closed()
+        print("Server stopped")
 
 
 if __name__ == "__main__":
