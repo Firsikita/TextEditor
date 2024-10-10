@@ -1,6 +1,5 @@
 import asyncio
 import threading
-
 import websockets
 import json
 import aioconsole
@@ -8,7 +7,6 @@ import curses
 
 async def request_files(websocket, folder_name):
     await websocket.send(f"GET_FILES {folder_name}")
-
     response = await websocket.recv()
     files = json.loads(response)
 
@@ -36,7 +34,8 @@ async def open_file(websocket, file_path):
 
     if 'error' in result:
         print(f"Error: {result['error']}")
-    else: print(result.get('content', ""))
+    else:
+        print(result.get('content', ""))
 
 async def save_content_file(websocket, file_path, file_content):
     await websocket.send(f"SAVE_CONTENT {json.dumps({'file_path': file_path, 'content': file_content})}")
@@ -48,27 +47,24 @@ async def send_edit_operation(websocket, operation):
 def curses_main(stdscr, file_content, file_path, websocket, event_loop):
     curses.curs_set(1)
     stdscr.clear()
-
     stdscr.addstr(0, 0, file_content)
     stdscr.refresh()
 
-    # Начинаем редактирование
+    # Start editing
     cursor_pos = len(file_content)
     content = list(file_content)
 
     while True:
         ch = stdscr.getch()
 
-        # Выход (Esc key)
+        # Exit (Esc key)
         if ch == 27:  # ESC key
-            asyncio.run_coroutine_threadsafe(save_content_file(websocket, file_path, content), event_loop)
+            asyncio.run_coroutine_threadsafe(save_content_file(websocket, file_path, ''.join(content)), event_loop)
             break
-
 
         elif ch == 127:  # Backspace key
             if cursor_pos > 0:
                 cursor_pos -= 1
-
                 stdscr.move(0, cursor_pos)
                 stdscr.delch()
                 del content[cursor_pos]
@@ -99,13 +95,23 @@ def curses_main(stdscr, file_content, file_path, websocket, event_loop):
             asyncio.run_coroutine_threadsafe(send_edit_operation(websocket, operation), event_loop)
 
         stdscr.move(0, cursor_pos)
+
+def run_event_loop(event_loop):
+    asyncio.set_event_loop(event_loop)
+    event_loop.run_forever()
+
 def start_curses_in_thread(websocket, file_path, file_content):
     event_loop = asyncio.new_event_loop()
+    loop_thread = threading.Thread(target=run_event_loop, args=(event_loop,))
+    loop_thread.start()
+
     def run_curses():
         asyncio.set_event_loop(event_loop)
         curses.wrapper(curses_main, file_content, file_path, websocket, event_loop)
+
     curser_thread = threading.Thread(target=run_curses)
     curser_thread.start()
+
     return curser_thread
 
 async def edit_file(websocket, file_path):
@@ -128,9 +134,10 @@ async def ping(websocket):
             response = await websocket.recv()
             await asyncio.sleep(10)
     except asyncio.CancelledError:
-        print("ping-pong task is cancelled")
+        print("Ping-pong task is cancelled")
+        pass
 
-async def hendle_message(websocket):
+async def handle_message(websocket):
     directory = "server_files"
     while True:
         command = await aioconsole.ainput()
@@ -151,8 +158,8 @@ async def hendle_message(websocket):
             await create_file(websocket, file_path)
             await request_files(websocket, directory)
 
-        elif command.lower() == "delite file":
-            file_name = await aioconsole.ainput("Enter delite file name: ")
+        elif command.lower() == "delete file":
+            file_name = await aioconsole.ainput("Enter file name to delete: ")
             file_path = directory + "/" + file_name
             await delete_file(websocket, file_path)
             await request_files(websocket, directory)
@@ -171,9 +178,8 @@ async def client():
     async with websockets.connect('ws://192.168.0.100:8765') as websocket:
         print("Text editor start")
         ping_pong = asyncio.create_task(ping(websocket))
-        await hendle_message(websocket)
+        await handle_message(websocket)
         ping_pong.cancel()
-
 
 if __name__ == '__main__':
     asyncio.run(client())
