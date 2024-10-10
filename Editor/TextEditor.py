@@ -1,7 +1,10 @@
 import asyncio
+import threading
+
 import websockets
 import json
 import aioconsole
+import curses
 
 async def request_files(websocket, folder_name):
     await websocket.send(f"GET_FILES {folder_name}")
@@ -34,6 +37,89 @@ async def open_file(websocket, file_path):
     if 'error' in result:
         print(f"Error: {result['error']}")
     else: print(result.get('content', ""))
+
+async def save_content_file(websocket, file_path, file_content):
+    await websocket.send(f"SAVE_CONTENT {json.dumps({'file_path': file_path, 'content': file_content})}")
+    response = await websocket.recv()
+
+async def send_edit_operation(websocket, operation):
+    await websocket.send(f"EDIT_FILE {json.dumps(operation)}")
+
+def curses_main(stdscr, file_content, file_path, websocket, event_loop):
+    curses.curs_set(1)
+    stdscr.clear()
+
+    stdscr.addstr(0, 0, file_content)
+    stdscr.refresh()
+
+    # Начинаем редактирование
+    cursor_pos = len(file_content)
+    content = list(file_content)
+
+    while True:
+        ch = stdscr.getch()
+
+        # Выход (Esc key)
+        if ch == 27:  # ESC key
+            asyncio.run_coroutine_threadsafe(save_content_file(websocket, file_path, content), event_loop)
+            break
+
+
+        elif ch == 127:  # Backspace key
+            if cursor_pos > 0:
+                cursor_pos -= 1
+
+                stdscr.move(0, cursor_pos)
+                stdscr.delch()
+                del content[cursor_pos]
+
+                operation = {
+                    "file_path": file_path,
+                    "operation": {
+                        "type": "delete",
+                        "pos": cursor_pos
+                    }
+                }
+                asyncio.run_coroutine_threadsafe(send_edit_operation(websocket, operation), event_loop)
+
+        elif 32 <= ch <= 126:
+            stdscr.insch(cursor_pos, ch)
+            stdscr.refresh()
+            content.insert(cursor_pos, chr(ch))
+            cursor_pos += 1
+
+            operation = {
+                "file_path": file_path,
+                "operation": {
+                    "type": "insert",
+                    "pos": cursor_pos - 1,
+                    "char": chr(ch)
+                }
+            }
+            asyncio.run_coroutine_threadsafe(send_edit_operation(websocket, operation), event_loop)
+
+        stdscr.move(0, cursor_pos)
+def start_curses_in_thread(websocket, file_path, file_content):
+    event_loop = asyncio.new_event_loop()
+    def run_curses():
+        asyncio.set_event_loop(event_loop)
+        curses.wrapper(curses_main, file_content, file_path, websocket, event_loop)
+    curser_thread = threading.Thread(target=run_curses)
+    curser_thread.start()
+    return curser_thread
+
+async def edit_file(websocket, file_path):
+    file_content = ""
+
+    await websocket.send(f"GET_FILE_CONTENT {file_path}")
+    response = await websocket.recv()
+    result = json.loads(response)
+    if 'error' in result:
+        print(f"Error: {result['error']}")
+        return
+    file_content = result.get('content', "")
+
+    start_curses_in_thread(websocket, file_path, file_content)
 
 async def ping(websocket):
     try:
@@ -75,6 +161,11 @@ async def hendle_message(websocket):
             file_name = await aioconsole.ainput("Enter file name: ")
             file_path = directory + "/" + file_name
             await open_file(websocket, file_path)
+
+        elif command.lower() == "edit file":
+            file_name = await aioconsole.ainput("Enter file name to edit: ")
+            file_path = directory + "/" + file_name
+            await edit_file(websocket, file_path)
 
 async def client():
     async with websockets.connect('ws://192.168.0.100:8765') as websocket:

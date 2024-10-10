@@ -6,22 +6,26 @@ import json
 
 clients = set()
 server = None
+open_files = {}
+file_users = {}
 
+async def notify_client(file_name, operation):
+    if file_name in file_users:
+        for client in file_users[file_name]:
+            if client in clients:
+                message = json.dumps({"file name": file_name, "operation": operation})
+                await client.send(message)
 
 async def handle_message(websocket, message):
     if message.startswith("PING"):
-        #print("Pong")
         await websocket.send("PONG")
         return
 
-    print("get files")
     if message.startswith("GET_FILES"):
         path = message[len("GET_FILES "):]
         if os.path.isdir(path):
             files = os.listdir(path)
-            print("start send")
             await websocket.send(json.dumps(files))
-            print(files)
         else:
             await websocket.send(json.dumps({"error": "Invalid path"}))
 
@@ -31,13 +35,20 @@ async def handle_message(websocket, message):
             if os.path.isfile(file_path):
                 with open(file_path, 'r', encoding='utf-8') as file:
                     content = file.read()
+                    open_files[file_path] = content
                 await websocket.send(json.dumps({"content": content}))
+
+                if file_path not in file_users:
+                    file_users[file_path] = set()
+                file_users[file_path].add(websocket)
+
             else:
                 await websocket.send(json.dumps({"error": "File not found"}))
         except Exception as e:
             await websocket.send(json.dumps({"error": str(e)}))
 
     elif message.startswith("SAVE_CONTENT"):
+        print("save")
         try:
             data = json.loads(message[len("SAVE_CONTENT "):])
             file_path = data["file_path"]
@@ -77,6 +88,23 @@ async def handle_message(websocket, message):
         except Exception as e:
             await websocket.send(json.dumps({"error": str(e)}))
 
+    elif message.startswith("EDIT_FILE"):
+        print('edit file')
+        data = json.loads(message[len("EDIT_FILE "):])
+        file_path = data["file_path"]
+        operation = data["operation"]
+
+        if file_path in open_files:
+            if operation["type"] == "insert":
+                pos = operation["pos"]
+                char = operation["char"]
+                open_files[file_path] = open_files[file_path][:pos] + char + open_files[file_path][pos:]
+            elif operation["type"] == "delete":
+                pos = operation["pos"]
+                open_files[file_path] = open_files[file_path][:pos] + open_files[file_path][pos + 1:]
+
+            await notify_client(file_path, operation)
+
 
 async def echo(websocket, path):
     clients.add(websocket)
@@ -101,7 +129,7 @@ async def main():
     stop_event = asyncio.Event()
 
     try:
-        await asyncio.Future()  # Бесконечная задача
+        await asyncio.Future()
     finally:
         await stop_server()
 
