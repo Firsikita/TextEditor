@@ -1,9 +1,14 @@
 import asyncio
+import os
 import threading
+
 import websockets
 import json
 import aioconsole
 import curses
+
+# HOST = "192.168.0.100"
+HOST = "localhost"
 
 async def request_files(websocket, folder_name):
     await websocket.send(f"GET_FILES {folder_name}")
@@ -138,7 +143,7 @@ async def ping(websocket):
         pass
 
 async def handle_message(websocket):
-    directory = "server_files"
+    directory = os.getcwd() + '/Server/server_files'
     while True:
         command = await aioconsole.ainput()
 
@@ -165,6 +170,7 @@ async def handle_message(websocket):
             await request_files(websocket, directory)
 
         elif command.lower() == "open file":
+            print(directory)
             file_name = await aioconsole.ainput("Enter file name: ")
             file_path = directory + "/" + file_name
             await open_file(websocket, file_path)
@@ -175,7 +181,7 @@ async def handle_message(websocket):
             await edit_file(websocket, file_path)
 
 async def client():
-    async with websockets.connect('ws://192.168.0.100:8765') as websocket:
+    async with websockets.connect(f'ws://{HOST}:8765') as websocket:
         print("Text editor start")
         ping_pong = asyncio.create_task(ping(websocket))
         await handle_message(websocket)
