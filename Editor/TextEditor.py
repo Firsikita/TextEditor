@@ -1,9 +1,8 @@
 import asyncio
-import threading
 import websockets
 import json
-import aioconsole
 import curses
+import aioconsole
 
 async def request_files(websocket, folder_name):
     await websocket.send(f"GET_FILES {folder_name}")
@@ -44,20 +43,18 @@ async def save_content_file(websocket, file_path, file_content):
 async def send_edit_operation(websocket, operation):
     await websocket.send(f"EDIT_FILE {json.dumps(operation)}")
 
-def curses_main(stdscr, file_content, file_path, websocket, event_loop):
+def curses_main(stdscr, file_content, file_path, websocket, event_loop, stop_event):
     curses.curs_set(1)
     stdscr.clear()
     stdscr.addstr(0, 0, file_content)
     stdscr.refresh()
 
-    # Start editing
     cursor_pos = len(file_content)
     content = list(file_content)
 
     while True:
         ch = stdscr.getch()
 
-        # Exit (Esc key)
         if ch == 27:  # ESC key
             asyncio.run_coroutine_threadsafe(save_content_file(websocket, file_path, ''.join(content)), event_loop)
             break
@@ -79,10 +76,13 @@ def curses_main(stdscr, file_content, file_path, websocket, event_loop):
                 asyncio.run_coroutine_threadsafe(send_edit_operation(websocket, operation), event_loop)
 
         elif 32 <= ch <= 126:
-            stdscr.insch(cursor_pos, ch)
-            stdscr.refresh()
             content.insert(cursor_pos, chr(ch))
             cursor_pos += 1
+
+            stdscr.clear()
+            stdscr.addstr(0, 0, ''.join(content))
+            stdscr.move(0, cursor_pos)
+            stdscr.refresh()
 
             operation = {
                 "file_path": file_path,
@@ -96,42 +96,30 @@ def curses_main(stdscr, file_content, file_path, websocket, event_loop):
 
         stdscr.move(0, cursor_pos)
 
-def run_event_loop(event_loop):
-    asyncio.set_event_loop(event_loop)
-    event_loop.run_forever()
+    stop_event.set()
 
-def start_curses_in_thread(websocket, file_path, file_content):
-    event_loop = asyncio.new_event_loop()
-    loop_thread = threading.Thread(target=run_event_loop, args=(event_loop,))
-    loop_thread.start()
-
-    def run_curses():
-        asyncio.set_event_loop(event_loop)
-        curses.wrapper(curses_main, file_content, file_path, websocket, event_loop)
-
-    curser_thread = threading.Thread(target=run_curses)
-    curser_thread.start()
-
-    return curser_thread
+async def run_curses(file_content, file_path, websocket, stop_event):
+    await asyncio.get_event_loop().run_in_executor(None, curses.wrapper, curses_main, file_content, file_path, websocket, asyncio.get_event_loop(), stop_event)
 
 async def edit_file(websocket, file_path):
-    file_content = ""
-
-    await websocket.send(f"GET_FILE_CONTENT {file_path}")
+    await websocket.send(f"OPEN_FILE {file_path}")
     response = await websocket.recv()
+    print(response)
     result = json.loads(response)
     if 'error' in result:
         print(f"Error: {result['error']}")
         return
     file_content = result.get('content', "")
 
-    start_curses_in_thread(websocket, file_path, file_content)
+    stop_event = asyncio.Event()
+    await run_curses(file_content, file_path, websocket, stop_event)
+
+    await websocket.send(f"CLOSE_FILE {file_path}")
 
 async def ping(websocket):
     try:
         while True:
             await websocket.send("PING")
-            response = await websocket.recv()
             await asyncio.sleep(10)
     except asyncio.CancelledError:
         print("Ping-pong task is cancelled")
@@ -152,24 +140,24 @@ async def handle_message(websocket):
                 directory = directory + "/" + folder_name
             await request_files(websocket, folder_name)
 
-        elif command.lower() == "create file":
+        elif command.lower() == "create":
             file_name = await aioconsole.ainput("Enter new file name: ")
             file_path = directory + "/" + file_name
             await create_file(websocket, file_path)
             await request_files(websocket, directory)
 
-        elif command.lower() == "delete file":
+        elif command.lower() == "delete":
             file_name = await aioconsole.ainput("Enter file name to delete: ")
             file_path = directory + "/" + file_name
             await delete_file(websocket, file_path)
             await request_files(websocket, directory)
 
-        elif command.lower() == "open file":
+        elif command.lower() == "open":
             file_name = await aioconsole.ainput("Enter file name: ")
             file_path = directory + "/" + file_name
             await open_file(websocket, file_path)
 
-        elif command.lower() == "edit file":
+        elif command.lower() == "edit":
             file_name = await aioconsole.ainput("Enter file name to edit: ")
             file_path = directory + "/" + file_name
             await edit_file(websocket, file_path)

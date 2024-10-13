@@ -13,12 +13,12 @@ async def notify_client(file_name, operation):
     if file_name in file_users:
         for client in file_users[file_name]:
             if client in clients:
-                message = json.dumps({"file name": file_name, "operation": operation})
+                message = json.dumps({"file_name": file_name, "operation": operation})
                 await client.send(message)
 
 async def handle_message(websocket, message):
     if message.startswith("PING"):
-        await websocket.send("PONG")
+        print("PONG")
         return
 
     if message.startswith("GET_FILES"):
@@ -29,8 +29,8 @@ async def handle_message(websocket, message):
         else:
             await websocket.send(json.dumps({"error": "Invalid path"}))
 
-    elif message.startswith("GET_FILE_CONTENT"):
-        file_path = message[len("GET_FILE_CONTENT "):]
+    elif message.startswith("OPEN_FILE"):
+        file_path = message[len("OPEN_FILE "):]
         try:
             if os.path.isfile(file_path):
                 with open(file_path, 'r', encoding='utf-8') as file:
@@ -41,14 +41,22 @@ async def handle_message(websocket, message):
                 if file_path not in file_users:
                     file_users[file_path] = set()
                 file_users[file_path].add(websocket)
-
             else:
                 await websocket.send(json.dumps({"error": "File not found"}))
         except Exception as e:
             await websocket.send(json.dumps({"error": str(e)}))
+        print(open_files)
+        print(file_users)
+
+    elif message.startswith("CLOSE_FILE"):
+        file_path = message[len("CLOSE_FILE "):]
+        open_files.pop(file_path, None)
+        if file_path in file_users:
+            file_users[file_path].discard(websocket)
+            if not file_users[file_path]:
+                del file_users[file_path]
 
     elif message.startswith("SAVE_CONTENT"):
-        print("save")
         try:
             data = json.loads(message[len("SAVE_CONTENT "):])
             file_path = data["file_path"]
@@ -57,7 +65,6 @@ async def handle_message(websocket, message):
             if os.path.isfile(file_path):
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.write(content)
-                    print("Content saved")
                 await websocket.send(json.dumps({"status": "success", "message": "File saved"}))
             else:
                 await websocket.send(json.dumps({"error": "File not found"}))
@@ -84,27 +91,27 @@ async def handle_message(websocket, message):
             file_path = data["file_path"]
             os.remove(file_path)
             await websocket.send(json.dumps({"status": "success", "message": "File deleted"}))
-
         except Exception as e:
             await websocket.send(json.dumps({"error": str(e)}))
 
     elif message.startswith("EDIT_FILE"):
-        print('edit file')
-        data = json.loads(message[len("EDIT_FILE "):])
-        file_path = data["file_path"]
-        operation = data["operation"]
+        try:
+            data = json.loads(message[len("EDIT_FILE "):])
+            file_path = data["file_path"]
+            operation = data["operation"]
 
-        if file_path in open_files:
-            if operation["type"] == "insert":
-                pos = operation["pos"]
-                char = operation["char"]
-                open_files[file_path] = open_files[file_path][:pos] + char + open_files[file_path][pos:]
-            elif operation["type"] == "delete":
-                pos = operation["pos"]
-                open_files[file_path] = open_files[file_path][:pos] + open_files[file_path][pos + 1:]
+            if file_path in open_files:
+                if operation["type"] == "insert":
+                    pos = operation["pos"]
+                    char = operation["char"]
+                    open_files[file_path] = open_files[file_path][:pos] + char + open_files[file_path][pos:]
+                elif operation["type"] == "delete":
+                    pos = operation["pos"]
+                    open_files[file_path] = open_files[file_path][:pos] + open_files[file_path][pos + 1:]
 
-            await notify_client(file_path, operation)
-
+                await notify_client(file_path, operation)
+        except Exception as e:
+            await websocket.send(json.dumps({"error": str(e)}))
 
 async def echo(websocket, path):
     clients.add(websocket)
@@ -119,15 +126,10 @@ async def echo(websocket, path):
         clients.remove(websocket)
         print(f"User disconnected. Total users: {len(clients)}")
 
-
 async def main():
     global server
     server = await websockets.serve(echo, "192.168.0.100", 8765)
     print("Server started")
-
-    loop = asyncio.get_running_loop()
-    stop_event = asyncio.Event()
-
     try:
         await asyncio.Future()
     finally:
@@ -138,7 +140,6 @@ async def stop_server():
         server.close()
         await server.wait_closed()
         print("Server stopped")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
