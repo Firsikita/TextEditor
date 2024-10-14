@@ -43,23 +43,56 @@ async def save_content_file(websocket, file_path, file_content):
 async def send_edit_operation(websocket, operation):
     await websocket.send(f"EDIT_FILE {json.dumps(operation)}")
 
+async def listen_for_update(websocket, stdscr, content):
+    try:
+        while True:
+            message = await websocket.recv()
+            update = json.loads(message)
+            operation = update["operation"]
+
+            if operation["type"] == "insert":
+                pos = operation["pos"]
+                char = operation["char"]
+                content.insert(pos, char)
+            elif operation["type"] == "delete":
+                pos = operation["pos"]
+                del content[pos]
+
+            stdscr.clear()
+            stdscr.addstr(0, 0, ''.join(content))
+            stdscr.refresh()
+    except asyncio.CancelledError:
+        pass
+
 def curses_main(stdscr, file_content, file_path, websocket, event_loop, stop_event):
     curses.curs_set(1)
     stdscr.clear()
-    stdscr.addstr(0, 0, file_content)
+    content = list(file_content)
+    stdscr.addstr(0, 0, ''.join(content))
     stdscr.refresh()
 
-    cursor_pos = len(file_content)
-    content = list(file_content)
+    asyncio.run_coroutine_threadsafe(listen_for_update(websocket, stdscr, content), event_loop)
+
+    cursor_pos = len(content)
 
     while True:
         ch = stdscr.getch()
 
-        if ch == 27:  # ESC key
+        if ch == 27:
             asyncio.run_coroutine_threadsafe(save_content_file(websocket, file_path, ''.join(content)), event_loop)
             break
 
-        elif ch == 127:  # Backspace key
+        elif ch == curses.KEY_LEFT:
+            if cursor_pos > 0:
+                cursor_pos -= 1
+            stdscr.move(0, cursor_pos)
+
+        elif ch == curses.KEY_RIGHT:
+            if cursor_pos < len(content):
+                cursor_pos += 1
+            stdscr.move(0, cursor_pos)
+
+        elif ch == 127:
             if cursor_pos > 0:
                 cursor_pos -= 1
                 stdscr.move(0, cursor_pos)
@@ -104,7 +137,6 @@ async def run_curses(file_content, file_path, websocket, stop_event):
 async def edit_file(websocket, file_path):
     await websocket.send(f"OPEN_FILE {file_path}")
     response = await websocket.recv()
-    print(response)
     result = json.loads(response)
     if 'error' in result:
         print(f"Error: {result['error']}")
@@ -163,7 +195,7 @@ async def handle_message(websocket):
             await edit_file(websocket, file_path)
 
 async def client():
-    async with websockets.connect('ws://192.168.0.100:8765') as websocket:
+    async with websockets.connect('ws://10.249.25.87:8765') as websocket:
         print("Text editor start")
         ping_pong = asyncio.create_task(ping(websocket))
         await handle_message(websocket)

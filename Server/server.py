@@ -9,16 +9,16 @@ server = None
 open_files = {}
 file_users = {}
 
-async def notify_client(file_name, operation):
+async def notify_client(file_name, operation, websocket):
     if file_name in file_users:
         for client in file_users[file_name]:
-            if client in clients:
+            if client in clients and client != websocket:
                 message = json.dumps({"file_name": file_name, "operation": operation})
                 await client.send(message)
 
 async def handle_message(websocket, message):
     if message.startswith("PING"):
-        print("PONG")
+        #print("PONG")
         return
 
     if message.startswith("GET_FILES"):
@@ -33,14 +33,18 @@ async def handle_message(websocket, message):
         file_path = message[len("OPEN_FILE "):]
         try:
             if os.path.isfile(file_path):
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    content = file.read()
-                    open_files[file_path] = content
-                await websocket.send(json.dumps({"content": content}))
+                if file_path in open_files:
+                    content = open_files[file_path]
+                    await websocket.send(json.dumps({"content": content}))
+                else:
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        content = file.read()
+                        open_files[file_path] = content
+                    await websocket.send(json.dumps({"content": content}))
 
-                if file_path not in file_users:
-                    file_users[file_path] = set()
-                file_users[file_path].add(websocket)
+                    if file_path not in file_users:
+                        file_users[file_path] = set()
+                    file_users[file_path].add(websocket)
             else:
                 await websocket.send(json.dumps({"error": "File not found"}))
         except Exception as e:
@@ -61,6 +65,7 @@ async def handle_message(websocket, message):
             data = json.loads(message[len("SAVE_CONTENT "):])
             file_path = data["file_path"]
             content = data["content"]
+            #print(f"save {content}")
 
             if os.path.isfile(file_path):
                 with open(file_path, 'w', encoding='utf-8') as file:
@@ -109,7 +114,7 @@ async def handle_message(websocket, message):
                     pos = operation["pos"]
                     open_files[file_path] = open_files[file_path][:pos] + open_files[file_path][pos + 1:]
 
-                await notify_client(file_path, operation)
+                await notify_client(file_path, operation, websocket)
         except Exception as e:
             await websocket.send(json.dumps({"error": str(e)}))
 
@@ -128,7 +133,7 @@ async def echo(websocket, path):
 
 async def main():
     global server
-    server = await websockets.serve(echo, "192.168.0.100", 8765)
+    server = await websockets.serve(echo, "10.249.25.87", 8765)
     print("Server started")
     try:
         await asyncio.Future()
