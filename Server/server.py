@@ -124,13 +124,13 @@ class Server:
 
             success, error = self.file_manager.save_file(filename,
                                                                content)
-            if success:
-                response = Protocol.create_response('SAVE_CONTENT',
-                                                    {'status': 'success'})
-            else:
-                response = Protocol.create_response('SAVE_CONTENT',
-                                                    {'status': 'error',
-                                                     'error': error})
+            #if success:
+            #    response = Protocol.create_response('SAVE_CONTENT',
+            #                                        {'status': 'success'})
+            #else:
+            #    response = Protocol.create_response('SAVE_CONTENT',
+            #                                        {'status': 'error',
+            #                                         'error': error})
         elif command == 'update':
             response = Protocol.create_response('update', {'status': 'success'})
 

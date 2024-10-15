@@ -14,7 +14,6 @@ class Client:
         self.filename = None
         self.user_id = None
 
-        self.editor = None
         self.session_manager = SessionManager()
 
     @staticmethod
@@ -31,7 +30,7 @@ class Client:
         async with websockets.connect(self.server_uri) as websocket:
             print("Text editor start")
 
-            self.editor = Editor(websocket, asyncio.get_event_loop())
+            self.editor = Editor(asyncio.get_event_loop())
 
             ping_pong = asyncio.create_task(self.ping(websocket))
 
@@ -85,6 +84,7 @@ class Client:
     async def get_files(websocket):
         await websocket.send(Protocol.create_message('GET_FILES'))
         response = await websocket.recv()
+        print(response)
         file_list = Protocol.parse_response(response)['data']['files']
         print("\nFiles in folder: ")
         for i, file in enumerate(file_list, start=1):
@@ -156,20 +156,17 @@ class Client:
         )
         response = await websocket.recv()
         result = Protocol.parse_response(response)
-        print(f"RESPONSE: {result}")
 
         if result['data'].get('status', '') == 'success':
             self.filename = filename
             content = result['data']['content']
             self.current_content = content
-            print(f"\n*{content}")
 
             stop_event = asyncio.Event()
-            await self.editor.edit(self.current_content, filename, stop_event)
+            await self.editor.edit(self.current_content, filename, stop_event, websocket)
             self.session_manager.update_content(self.filename,
                                                 self.current_content)
             self.current_content = self.session_manager.get_content(filename)
-            print(f"current content: {self.current_content}")
             await websocket.send(
                 Protocol.create_message("CLOSE_FILE", {'filename': filename})
             )

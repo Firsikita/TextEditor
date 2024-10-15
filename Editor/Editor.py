@@ -4,25 +4,24 @@ from Shared.protocol import Protocol
 
 
 class Editor:
-    def __init__(self, websocket, event_loop):
-        self.websocket = websocket
+    def __init__(self, event_loop):
         self.event_loop = event_loop
 
-    async def edit(self, content, filename, stop_event):
+    async def edit(self, content, filename, stop_event, websocket):
         await asyncio.get_event_loop().run_in_executor(None, curses.wrapper,
                                                        self.curses_editor,
-                                                       content, filename,
+                                                       content, filename, websocket, asyncio.get_event_loop(),
                                                        stop_event)
 
-    async def save_content_file(self, filename, content):
+    async def save_content_file(self, filename, content, websocket):
         message = Protocol.create_message("SAVE_CONTENT", {
             'filename': filename,
             'content': "".join(content)
         })
-        await self.websocket.send(message)
-        response = await self.websocket.recv()
+        await websocket.send(message)
+        #response = await self.websocket.recv()
 
-    def curses_editor(self, stdscr, content, filename, stop_event):
+    def curses_editor(self, stdscr, content, filename, websocket, event_loop, stop_event):
         curses.curs_set(1)
         stdscr.clear()
         stdscr.addstr(0, 0, content)
@@ -31,13 +30,12 @@ class Editor:
         cursor_pos = len(content)
         current_content = list(content)
 
-        while not stop_event.is_set():
+        while True:
             key = stdscr.getch()
 
             if key == 27:
                 asyncio.run_coroutine_threadsafe(
-                    self.save_content_file(filename, "".join(current_content)),
-                    self.event_loop)
+                    self.save_content_file(filename, "".join(current_content), websocket), event_loop)
                 break
 
             elif key == 127 or key == curses.KEY_BACKSPACE:
@@ -55,7 +53,7 @@ class Editor:
                         }
                     })
                     asyncio.run_coroutine_threadsafe(
-                        self.websocket.send(message), self.event_loop)
+                        websocket.send(message), event_loop)
 
             elif 32 <= key <= 126:
                 ch = chr(key)
@@ -76,6 +74,7 @@ class Editor:
                     }
                 })
                 asyncio.run_coroutine_threadsafe(
-                    self.websocket.send(message), self.event_loop)
+                    websocket.send(message), event_loop)
 
             stdscr.move(0, cursor_pos)
+        stop_event.set()
