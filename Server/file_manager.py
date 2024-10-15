@@ -1,5 +1,4 @@
 import os
-import asyncio
 
 class FileManager:
     def __init__(self, base_dir='./Server/server_files'):
@@ -10,28 +9,29 @@ class FileManager:
     def get_files(self):
         try:
             return os.listdir(self.base_dir)
-        except Exception as _:
+        except OSError:
             return []
 
     def open_file(self, filename):
         filepath = os.path.join(self.base_dir, filename)
+        print(f"path to file: {filepath}")
         if not os.path.exists(filepath):
-            return None
+            return False, None
         with open(filepath, 'r') as f:
-            return f.read()
+            return True, f.read()
 
-    async def create_file(self, filename):
+    def create_file(self, filename):
         filepath = os.path.join(self.base_dir, filename)
         if os.path.exists(filepath):
             return False, "File already exists"
         try:
-            async with open(filepath, 'w') as f:
+            with open(filepath, 'w') as f:
                 f.write("")
             return True, None
         except Exception as e:
             return False, str(e)
 
-    async def delete_file(self, filename):
+    def delete_file(self, filename):
         filepath = os.path.join(self.base_dir, filename)
         if not os.path.exists(filepath):
             return False, "File does not exist"
@@ -41,14 +41,11 @@ class FileManager:
         except Exception as e:
             return False, str(e)
 
-    async def save_file(self, filename, content):
+    def save_file(self, filename, content):
         filepath = os.path.join(self.base_dir, filename)
         try:
-            async with open(filepath, 'w') as f:
+            with open(filepath, 'w') as f:
                 f.write(content)
             return True, None
         except Exception as e:
             return False, str(e)
-
-    def edit_file(self, filename, content):
-        pass

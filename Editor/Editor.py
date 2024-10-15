@@ -1,61 +1,81 @@
-import time
-from os import times
-
-
-#
-# class Char:
-#     def __init__(self, value, position, user_id, timestamp):
-#         self.value = value
-#         self.position = position
-#         self.user_id = user_id
-#         self.timestamp = timestamp
-#
-#     def __lt__(self, other):
-#         if self.position == other.position:
-#             if self.user_id == other.user_id:
-#                 return self.timestamp < other.timestamp
-#             return self.user_id < other.user_id
-#         return self.position < other.position
+import curses
+import asyncio
+from Shared.protocol import Protocol
 
 
 class Editor:
-    def __init__(self):
-        self.doc = []
-        self.deleted = set()
+    def __init__(self, websocket, event_loop):
+        self.websocket = websocket
+        self.event_loop = event_loop
 
-    def initialize_doc(self, content):
-        for i, ch in enumerate(content):
-            self.doc.append((ch, i, 'initial', time.time()))
+    async def edit(self, content, filename, stop_event):
+        await asyncio.get_event_loop().run_in_executor(None, curses.wrapper,
+                                                       self.curses_editor,
+                                                       content, filename,
+                                                       stop_event)
 
-    def insert(self, pos, char, user_id):
-        timestamp = time.time()
-        new_char = (char, pos, user_id, timestamp)
-        self.doc.insert(pos, new_char)
+    async def save_content_file(self, filename, content):
+        message = Protocol.create_message("SAVE_CONTENT", {
+            'filename': filename,
+            'content': "".join(content)
+        })
+        await self.websocket.send(message)
+        response = await self.websocket.recv()
 
-        for i in range(pos + 1, len(self.doc)):
-            self.doc[i] = (self.doc[i][0], i, self.doc[i][2], self.doc[i][3])
+    def curses_editor(self, stdscr, content, filename, stop_event):
+        curses.curs_set(1)
+        stdscr.clear()
+        stdscr.addstr(0, 0, content)
+        stdscr.refresh()
 
-    def delete(self, pos, user_id):
-        if pos < len(self.doc) and pos not in self.deleted:
-            self.deleted.add(pos)
-            self.doc[pos] = (self.doc[pos][0], pos, user_id, time.time(), 'deleted')
-        self.doc = [ch for ch in self.doc if not(ch.position == pos and ch.user_id == user_id)]
+        cursor_pos = len(content)
+        current_content = list(content)
 
-    def apply_operation(self, operation):
-        op_type = operation['op_type']
-        pos = operation['pos']
-        char = operation['char']
-        user_id = operation['user_id']
-        timestamp = operation['timestamp']
+        while not stop_event.is_set():
+            key = stdscr.getch()
 
-        if op_type == 'insert':
-            self.insert(pos, char, user_id)
-        elif op_type == 'delete':
-            self.delete(pos, user_id)
+            if key == 27:
+                asyncio.run_coroutine_threadsafe(
+                    self.save_content_file(filename, "".join(current_content)),
+                    self.event_loop)
+                break
 
-    def get_content(self):
-        return [ch[0] for ch in self.doc if 'deleted' not in ch]
+            elif key == 127 or key == curses.KEY_BACKSPACE:
+                if cursor_pos > 0:
+                    cursor_pos -= 1
+                    stdscr.move(0, cursor_pos)
+                    stdscr.delch()
+                    del current_content[cursor_pos]
 
+                    message = Protocol.create_message("EDIT_FILE", {
+                        'filename': filename,
+                        'operation': {
+                            'op_type': 'delete',
+                            'pos': cursor_pos,
+                        }
+                    })
+                    asyncio.run_coroutine_threadsafe(
+                        self.websocket.send(message), self.event_loop)
 
-    def get_timestamp(self):
-        return time.time()
+            elif 32 <= key <= 126:
+                ch = chr(key)
+                current_content.insert(cursor_pos, ch)
+                cursor_pos += 1
+
+                stdscr.clear()
+                stdscr.addstr(0, 0, "".join(current_content))
+                stdscr.move(0, cursor_pos)
+                stdscr.refresh()
+
+                message = Protocol.create_message("EDIT_FILE", {
+                    'filename': filename,
+                    'operation': {
+                        'op_type': 'insert',
+                        'pos': cursor_pos - 1,
+                        'char': ch
+                    }
+                })
+                asyncio.run_coroutine_threadsafe(
+                    self.websocket.send(message), self.event_loop)
+
+            stdscr.move(0, cursor_pos)
