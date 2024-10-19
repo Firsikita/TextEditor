@@ -1,5 +1,6 @@
 import curses
 import asyncio
+import json
 from Shared.protocol import Protocol
 
 
@@ -21,14 +22,36 @@ class Editor:
         await websocket.send(message)
         #response = await self.websocket.recv()
 
+    async def listen_for_update(self, websocket, stdscr, current_content):
+        try:
+            while True:
+                message = await websocket.recv()
+                update = json.loads(message)
+                operation = update['data']["operation"]
+
+                if operation["op_type"] == "insert":
+                    pos = operation["pos"]
+                    char = operation["char"]
+                    current_content.insert(pos, char)
+                elif operation["op_type"] == "delete":
+                    pos = operation["pos"]
+                    del current_content[pos]
+
+                stdscr.clear()
+                stdscr.addstr(0, 0, ''.join(current_content))
+                stdscr.refresh()
+        except asyncio.CancelledError:
+            pass
+
     def curses_editor(self, stdscr, content, filename, websocket, event_loop, stop_event):
         curses.curs_set(1)
         stdscr.clear()
         stdscr.addstr(0, 0, content)
         stdscr.refresh()
-
-        cursor_pos = len(content)
         current_content = list(content)
+
+        asyncio.run_coroutine_threadsafe(self.listen_for_update(websocket, stdscr, current_content), event_loop)
+        cursor_pos = len(current_content)
 
         while True:
             key = stdscr.getch()

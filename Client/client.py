@@ -4,17 +4,15 @@ import aioconsole
 
 from Shared.protocol import Protocol
 from Editor.Editor import Editor
-from Client.session_manager import SessionManager
 
 
 class Client:
     def __init__(self, server_uri):
+        self.editor = None
         self.server_uri = server_uri
         self.current_content = ""
         self.filename = None
         self.user_id = None
-
-        self.session_manager = SessionManager()
 
     @staticmethod
     async def ping(websocket):
@@ -42,17 +40,16 @@ class Client:
     async def login(self, websocket):
         print("Started login")
         username = await aioconsole.ainput("Enter username: ")
-        password = await aioconsole.ainput("Enter password: ")
 
         await websocket.send(Protocol.create_message('LOGIN',
-                                                     {'username': username,
-                                                      'password': password}))
+                                                     {'username': username}))
+
         response = await websocket.recv()
         result = Protocol.parse_response(response)
 
         if result['data']['status'] == 'success':
             self.user_id = result['data']['user_id']
-            print(f"Login successful with {self.user_id}")
+            print(f"{username} logged successful with {self.user_id}")
         else:
             print(f"Login failed with {self.user_id}")
 
@@ -98,26 +95,10 @@ class Client:
         result = Protocol.parse_response(response)
         print(f"response: {result}")
 
-        while result['data'].get('operation'):
-            operation = result['data'].get('operation')
-            print(f"RESP: {result}, op: {operation}")
-            if result['data'].get('status') or not operation:
-                break
-            self.filename = filename
-            self.session_manager.update_content(filename, self.current_content)
-            self.session_manager.apply_operation(filename, operation)
-            # self.current_content = self.session_manager.get_content(filename)
-            # self.session_manager.update_content(filename, self.current_content)
-            await websocket.send(Protocol.create_message('update', {}))
-            result = Protocol.parse_response(await websocket.recv())
-
         if result['data'].get('status') == 'success':
             self.filename = filename
             content = result['data'].get('content', "")
             self.current_content = content
-            self.session_manager.update_content(filename, self.current_content)
-            if self.current_content == "":
-                print("The file is empty")
             print(self.current_content)
         else:
             print(f"Error: {result['data']['error']}")
@@ -164,14 +145,14 @@ class Client:
 
             stop_event = asyncio.Event()
             await self.editor.edit(self.current_content, filename, stop_event, websocket)
-            self.session_manager.update_content(self.filename,
-                                                self.current_content)
-            self.current_content = self.session_manager.get_content(filename)
+            #self.session_manager.update_content(self.filename,
+            #                                    self.current_content)
+            #self.current_content = self.session_manager.get_content(filename)
             await websocket.send(
                 Protocol.create_message("CLOSE_FILE", {'filename': filename})
             )
 
-            self.session_manager.close_file(self.filename)
+            #self.session_manager.close_file(self.filename)
 
         else:
             print(
