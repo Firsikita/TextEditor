@@ -116,8 +116,10 @@ class Server:
 
             self.session_manager.apply_operation(filename, operation)
 
+            content = self.session_manager.get_content(filename)
+
             self.file_manager.save_file(
-                filename, self.session_manager.get_content(filename)
+                filename, content
             )
 
             await self.session_manager.share_update(

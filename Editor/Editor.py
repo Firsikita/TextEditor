@@ -87,12 +87,17 @@ class Editor:
                 )
                 break
 
-            elif key == curses.KEY_BACKSPACE or key == 8 or key == 127:
+            elif key in (curses.KEY_BACKSPACE, 8, 127):
                 if cursor_pos > 0:
                     cursor_pos -= 1
-                    stdscr.move(0, cursor_pos)
+                    # stdscr.move(0, cursor_pos)
                     del current_content[cursor_pos]
-                    stdscr.delch()
+                    # stdscr.delch()
+
+                    stdscr.clear()
+                    stdscr.addstr(0, 0, "".join(current_content))
+                    stdscr.move(0, cursor_pos)
+                    stdscr.refresh()
 
                     message = Protocol.create_message(
                         "EDIT_FILE",
