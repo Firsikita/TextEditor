@@ -2,60 +2,171 @@ import asyncio
 import websockets
 import aioconsole
 
-from Editor.TextEditor import request_files, create_file, delete_file, open_file, edit_file
+from Shared.protocol import Protocol
+from Editor.Editor import Editor
 
-async def ping(websocket):
-    try:
+
+class Client:
+    def __init__(self, server_uri):
+        self.editor = None
+        self.server_uri = server_uri
+        self.current_content = ""
+        self.filename = None
+        self.user_id = None
+
+    @staticmethod
+    async def ping(websocket):
+        try:
+            while True:
+                await websocket.send(Protocol.create_message("PING", None))
+                await asyncio.sleep(10)
+        except asyncio.CancelledError:
+            print("Ping-pong task is cancelled")
+            pass
+
+    async def connect(self):
+        async with websockets.connect(self.server_uri) as websocket:
+            print("Text editor start")
+
+            self.editor = Editor(asyncio.get_event_loop())
+
+            ping_pong = asyncio.create_task(self.ping(websocket))
+
+            await self.login(websocket)
+            await self.handle_message(websocket)
+
+            ping_pong.cancel()
+
+    async def login(self, websocket):
+        print("Started login")
+        username = await aioconsole.ainput("Enter username: ")
+
+        await websocket.send(
+            Protocol.create_message("LOGIN", {"username": username})
+        )
+
+        response = await websocket.recv()
+        result = Protocol.parse_response(response)
+
+        if result["data"]["status"] == "success":
+            self.user_id = result["data"]["user_id"]
+            print(f"{username} logged successful with {self.user_id}")
+        else:
+            print(f"Login failed with {self.user_id}")
+
+    async def handle_message(self, websocket):
         while True:
-            await websocket.send("PING")
-            await asyncio.sleep(10)
-    except asyncio.CancelledError:
-        print("Ping-pong task is cancelled")
-        pass
+            await aioconsole.aprint(
+                "\nChoose the command:",
+                "1. List files",
+                "2. Open file",
+                "3. Create file",
+                "4. Edit file",
+                "5. Delete file",
+                "6. Exit",
+                sep="\n",
+            )
+            command = await aioconsole.ainput()
 
-async def handle_message(websocket):
-    directory = "server_files"
-    while True:
-        command = await aioconsole.ainput()
+            if command == "1":
+                await self.get_files(websocket)
+            if command == "2":
+                await self.open_file(websocket)
+            if command == "3":
+                await self.create_file(websocket)
+                await self.get_files(websocket)
+            if command == "4":
+                await self.edit_file(websocket)
+            if command == "5":
+                await self.delete_file(websocket)
+                await self.get_files(websocket)
+            if command == "6":
+                print("Exiting")
+                break
 
-        if command.lower() == 'exit':
-            print("Exiting...")
-            break
+    @staticmethod
+    async def get_files(websocket):
+        await websocket.send(Protocol.create_message("GET_FILES"))
+        response = await websocket.recv()
+        print(response)
+        file_list = Protocol.parse_response(response)["data"]["files"]
+        print("\nFiles in folder: ")
+        for i, file in enumerate(file_list, start=1):
+            print(" " + str(i), file, sep=") ")
 
-        elif command.lower() == "get files":
-            folder_name = await aioconsole.ainput("Enter folder name: ")
-            if directory != folder_name:
-                directory = directory + "/" + folder_name
-            await request_files(websocket, folder_name)
+    async def open_file(self, websocket):
+        filename = await aioconsole.ainput("Enter file name: ")
+        await websocket.send(
+            Protocol.create_message("OPEN_FILE", {"filename": filename})
+        )
+        response = await websocket.recv()
+        result = Protocol.parse_response(response)
+        print(f"response: {result}")
 
-        elif command.lower() == "create":
-            file_name = await aioconsole.ainput("Enter new file name: ")
-            file_path = directory + "/" + file_name
-            await create_file(websocket, file_path)
-            await request_files(websocket, directory)
+        if result["data"].get("status") == "success":
+            self.filename = filename
+            content = result["data"].get("content", "")
+            self.current_content = content
+            print(self.current_content)
+        else:
+            print(f"Error: {result['data']['error']}")
 
-        elif command.lower() == "delete":
-            file_name = await aioconsole.ainput("Enter file name to delete: ")
-            file_path = directory + "/" + file_name
-            await delete_file(websocket, file_path)
-            await request_files(websocket, directory)
+    @staticmethod
+    async def create_file(websocket):
+        filename = await aioconsole.ainput("Enter new file name: ")
+        await websocket.send(
+            Protocol.create_message("CREATE_FILE", {"filename": filename})
+        )
+        response = await websocket.recv()
+        result = Protocol.parse_response(response)
+        if result["data"]["status"] == "success":
+            print(f"File {filename} created successfully.")
+        else:
+            print(
+                f"Error creating file {filename}: {result['data']['error']}."
+            )
 
-        elif command.lower() == "open":
-            file_name = await aioconsole.ainput("Enter file name: ")
-            file_path = directory + "/" + file_name
-            await open_file(websocket, file_path)
+    @staticmethod
+    async def delete_file(websocket):
+        filename = await aioconsole.ainput("Enter file name: ")
+        await websocket.send(
+            Protocol.create_message("DELETE_FILE", {"filename": filename})
+        )
+        response = await websocket.recv()
+        result = Protocol.parse_response(response)
+        if result["data"]["status"] == "success":
+            print(f"File {filename} deleted successfully.")
+        else:
+            print(
+                f"Error deleting file {filename}: {result['data']['error']}."
+            )
 
-        elif command.lower() == "edit":
-            file_name = await aioconsole.ainput("Enter file name to edit: ")
-            file_path = directory + "/" + file_name
-            await edit_file(websocket, file_path)
+    async def edit_file(self, websocket):
+        filename = await aioconsole.ainput("Enter file name to edit: ")
 
-async def client():
-    async with websockets.connect('ws://10.249.25.87:8765') as websocket:
-        print("Text editor start")
-        ping_pong = asyncio.create_task(ping(websocket))
-        await handle_message(websocket)
-        ping_pong.cancel()
+        await websocket.send(
+            Protocol.create_message("OPEN_FILE", {"filename": filename})
+        )
+        response = await websocket.recv()
+        result = Protocol.parse_response(response)
 
-if __name__ == '__main__':
-    asyncio.run(client())
+        if result["data"].get("status", "") == "success":
+            self.filename = filename
+            content = result["data"]["content"]
+            self.current_content = content
+
+            stop_event = asyncio.Event()
+            await self.editor.edit(
+                self.current_content, filename, stop_event, websocket
+            )
+
+            await websocket.send(
+                Protocol.create_message("CLOSE_FILE", {"filename": filename})
+            )
+        else:
+            print(f"Error editing file {filename}: {result['data']['error']}")
+
+
+if __name__ == "__main__":
+    client = Client("ws://localhost:8765")
+    asyncio.run(client.connect())

@@ -1,150 +1,156 @@
-import asyncio
-import websockets
-import signal
-import os
 import json
+import websockets
+import asyncio
+import uuid
 
-clients = set()
-server = None
-open_files = {}
-file_users = {}
+from .file_manager import FileManager
+from .session_manager import SessionManager
+from Shared.protocol import Protocol
 
-async def notify_client(file_name, operation, websocket):
-    if file_name in file_users:
-        for client in file_users[file_name]:
-            if client in clients and client != websocket:
-                message = json.dumps({"file_name": file_name, "operation": operation})
-                await client.send(message)
 
-async def handle_message(websocket, message):
-    if message.startswith("PING"):
-        #print("PONG")
-        return
+class Server:
+    def __init__(self):
+        self.file_manager = FileManager()
+        self.session_manager = SessionManager()
+        self.clients = set()
+        self.user_sessions = {}
 
-    if message.startswith("GET_FILES"):
-        path = message[len("GET_FILES "):]
-        if os.path.isdir(path):
-            files = os.listdir(path)
-            await websocket.send(json.dumps(files))
-        else:
-            await websocket.send(json.dumps({"error": "Invalid path"}))
+    async def start(self, host="localhost", port=8765):
+        async with websockets.serve(self.echo, host, port):
+            print(f"Server started on ws://{host}:{port}")
+            await asyncio.Future()
 
-    elif message.startswith("OPEN_FILE"):
-        file_path = message[len("OPEN_FILE "):]
+    async def echo(self, websocket, path):
+        self.clients.add(websocket)
+        print(
+            f"New client connected: {websocket}. Total users: {len(self.clients)}"
+        )
         try:
-            if os.path.isfile(file_path):
-                if file_path in open_files:
-                    content = open_files[file_path]
-                    await websocket.send(json.dumps({"content": content}))
+            async for message in websocket:
+                request = Protocol.parse_request(message)
+                await self.handle_request(request, websocket)
+        except websockets.exceptions.ConnectionClosed:
+            print("User disconnected.")
+        finally:
+            self.clients.remove(websocket)
+            print(
+                f"Client disconnected: {websocket}. Total users: {len(self.clients)}"
+            )
+
+    async def handle_request(self, request, websocket):
+        # print(f"Received request: {request}")
+
+        command = request["command"]
+        response = None
+
+        if command == "PING":
+            return
+
+        elif command == "LOGIN":
+            username = request["data"]["username"]
+            user_id = username
+            self.user_sessions[websocket] = user_id
+            print(f"Client {username} logged in with user_id: {user_id}")
+
+            response = Protocol.create_response(
+                "LOGIN", {"status": "success", "user_id": user_id}
+            )
+
+        elif command == "GET_FILES":
+            files = self.file_manager.get_files()
+            response = Protocol.create_response("GET_FILES", {"files": files})
+
+        elif command == "OPEN_FILE":
+            filename = request["data"]["filename"]
+            if filename not in self.session_manager.open_files:
+                success, content = self.file_manager.open_file(filename)
+                if success:
+                    self.session_manager.start_session(filename, websocket)
+                    self.session_manager.update_content(filename, content)
+                    response = Protocol.create_response(
+                        "OPEN_FILE", {"status": "success", "content": content}
+                    )
                 else:
-                    with open(file_path, 'r', encoding='utf-8') as file:
-                        content = file.read()
-                        open_files[file_path] = content
-                    await websocket.send(json.dumps({"content": content}))
-
-                    if file_path not in file_users:
-                        file_users[file_path] = set()
-                    file_users[file_path].add(websocket)
+                    response = Protocol.create_response(
+                        "ERROR", {"error": "File not found"}
+                    )
             else:
-                await websocket.send(json.dumps({"error": "File not found"}))
-        except Exception as e:
-            await websocket.send(json.dumps({"error": str(e)}))
-        print(open_files)
-        print(file_users)
+                content = self.session_manager.open_files[filename]
+                response = Protocol.create_response(
+                    "OPEN_FILE", {"status": "success", "content": content}
+                )
 
-    elif message.startswith("CLOSE_FILE"):
-        file_path = message[len("CLOSE_FILE "):]
-        open_files.pop(file_path, None)
-        if file_path in file_users:
-            file_users[file_path].discard(websocket)
-            if not file_users[file_path]:
-                del file_users[file_path]
+        elif command == "CLOSE_FILE":
+            filename = request["data"]["filename"]
+            self.session_manager.stop_session(filename, websocket)
 
-    elif message.startswith("SAVE_CONTENT"):
-        try:
-            data = json.loads(message[len("SAVE_CONTENT "):])
-            file_path = data["file_path"]
-            content = data["content"]
-            #print(f"save {content}")
-
-            if os.path.isfile(file_path):
-                with open(file_path, 'w', encoding='utf-8') as file:
-                    file.write(content)
-                await websocket.send(json.dumps({"status": "success", "message": "File saved"}))
+        elif command == "CREATE_FILE":
+            filename = request["data"]["filename"]
+            success, error = self.file_manager.create_file(filename)
+            if success:
+                response = Protocol.create_response(
+                    "CREATE_FILE", {"status": "success"}
+                )
             else:
-                await websocket.send(json.dumps({"error": "File not found"}))
-        except Exception as e:
-            await websocket.send(json.dumps({"error": str(e)}))
+                response = Protocol.create_response(
+                    "CREATE_FILE", {"status": "error", "error": error}
+                )
 
-    elif message.startswith("NEW_FILE"):
-        try:
-            data = json.loads(message[len("NEW_FILE "):])
-            file_path = data["file_path"]
-
-            if not os.path.exists(file_path):
-                with open(file_path, 'w', encoding='utf-8') as file:
-                    file.write("")
-                await websocket.send(json.dumps({"status": "success", "message": "File created"}))
+        elif command == "DELETE_FILE":
+            filename = request["data"]["filename"]
+            success, error = self.file_manager.delete_file(filename)
+            if success:
+                response = Protocol.create_response(
+                    "DELETE_FILE", {"status": "success"}
+                )
             else:
-                await websocket.send(json.dumps({"error": "File already exists"}))
-        except Exception as e:
-            await websocket.send(json.dumps({"error": str(e)}))
+                response = Protocol.create_response(
+                    "DELETE_FILE", {"status": "error", "error": error}
+                )
 
-    elif message.startswith("DELETE_FILE"):
-        try:
-            data = json.loads(message[len("DELETE_FILE "):])
-            file_path = data["file_path"]
-            os.remove(file_path)
-            await websocket.send(json.dumps({"status": "success", "message": "File deleted"}))
-        except Exception as e:
-            await websocket.send(json.dumps({"error": str(e)}))
+        elif command == "EDIT_FILE":
+            filename = request["data"]["filename"]
+            operation = request["data"]["operation"]
 
-    elif message.startswith("EDIT_FILE"):
-        try:
-            data = json.loads(message[len("EDIT_FILE "):])
-            file_path = data["file_path"]
-            operation = data["operation"]
+            self.session_manager.start_session(filename, websocket)
 
-            if file_path in open_files:
-                if operation["type"] == "insert":
-                    pos = operation["pos"]
-                    char = operation["char"]
-                    open_files[file_path] = open_files[file_path][:pos] + char + open_files[file_path][pos:]
-                elif operation["type"] == "delete":
-                    pos = operation["pos"]
-                    open_files[file_path] = open_files[file_path][:pos] + open_files[file_path][pos + 1:]
+            self.session_manager.apply_operation(filename, operation)
 
-                await notify_client(file_path, operation, websocket)
-        except Exception as e:
-            await websocket.send(json.dumps({"error": str(e)}))
+            content = self.session_manager.get_content(filename)
 
-async def echo(websocket, path):
-    clients.add(websocket)
-    print(f'New client connected. Total users: {len(clients)}')
+            self.file_manager.save_file(
+                filename, content
+            )
 
-    try:
-        async for message in websocket:
-            await handle_message(websocket, message)
-    except websockets.ConnectionClosed:
-        print("User disconnected.")
-    finally:
-        clients.remove(websocket)
-        print(f"User disconnected. Total users: {len(clients)}")
+            await self.session_manager.share_update(
+                filename, operation, websocket
+            )
 
-async def main():
-    global server
-    server = await websockets.serve(echo, "10.249.25.87", 8765)
-    print("Server started")
-    try:
-        await asyncio.Future()
-    finally:
-        await stop_server()
+        elif command == "SAVE_CONTENT":
+            filename = request["data"]["filename"]
+            content = request["data"]["content"]
 
-async def stop_server():
-    if server:
-        server.close()
-        await server.wait_closed()
-        print("Server stopped")
+            success, error = self.file_manager.save_file(filename, content)
+            # if success:
+            #    response = Protocol.create_response('SAVE_CONTENT',
+            #                                        {'status': 'success'})
+            # else:
+            #    response = Protocol.create_response('SAVE_CONTENT',
+            #                                        {'status': 'error',
+            #                                         'error': error})
+        elif command == "update":
+            response = Protocol.create_response(
+                "update", {"status": "success"}
+            )
+
+        else:
+            response = Protocol.create_response(
+                "ERROR", {"error": "Unknown command"}
+            )
+
+        if response:
+            await websocket.send(json.dumps(response))
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    server = Server()
+    asyncio.run(server.start())
