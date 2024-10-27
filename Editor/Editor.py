@@ -1,6 +1,7 @@
 import curses
 import asyncio
 import json
+
 from Shared.protocol import Protocol
 
 

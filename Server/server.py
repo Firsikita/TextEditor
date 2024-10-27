@@ -1,7 +1,6 @@
 import json
 import websockets
 import asyncio
-import uuid
 
 from .file_manager import FileManager
 from .session_manager import SessionManager
@@ -29,8 +28,8 @@ class Server:
             async for message in websocket:
                 request = Protocol.parse_request(message)
                 await self.handle_request(request, websocket)
-        except websockets.exceptions.ConnectionClosed:
-            print("User disconnected.")
+        except (websockets.ConnectionClosedOK, websockets.ConnectionClosedError) as e:
+            print(f"Connection closed: {e}")
         finally:
             self.clients.remove(websocket)
             print(

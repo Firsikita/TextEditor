@@ -55,6 +55,7 @@ class SessionManager:
             if filename in self.sessions:
                 for client in self.sessions[filename]:
                     if client != websocket:
+                        message = None
                         if operation["op_type"] == "insert":
                             message = Protocol.create_message(
                                 "EDIT_FILE",
