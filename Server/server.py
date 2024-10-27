@@ -1,7 +1,7 @@
 import json
 import websockets
 import asyncio
-import uuid
+import datetime
 
 from .file_manager import FileManager
 from .session_manager import SessionManager
@@ -14,6 +14,7 @@ class Server:
         self.session_manager = SessionManager()
         self.clients = set()
         self.user_sessions = {}
+        self.history_changes = {}
 
     async def start(self, host="localhost", port=8765):
         async with websockets.serve(self.echo, host, port):
@@ -64,6 +65,7 @@ class Server:
             filename = request["data"]["filename"]
             if filename not in self.session_manager.open_files:
                 success, content = self.file_manager.open_file(filename)
+                print(f"AAA ---- {content}")
                 if success:
                     self.session_manager.start_session(filename, websocket)
                     self.session_manager.update_content(filename, content)
@@ -76,6 +78,7 @@ class Server:
                     )
             else:
                 content = self.session_manager.open_files[filename]
+                print(f"BBB --- {content}")
                 response = Protocol.create_response(
                     "OPEN_FILE", {"status": "success", "content": content}
                 )
@@ -83,6 +86,8 @@ class Server:
         elif command == "CLOSE_FILE":
             filename = request["data"]["filename"]
             self.session_manager.stop_session(filename, websocket)
+            if filename in self.history_changes:
+                self.file_manager.save_history(filename, self.history_changes[filename])
 
         elif command == "CREATE_FILE":
             filename = request["data"]["filename"]
@@ -98,6 +103,7 @@ class Server:
 
         elif command == "DELETE_FILE":
             filename = request["data"]["filename"]
+            self.session_manager.stop_session(request["data"]["filename"], websocket)
             success, error = self.file_manager.delete_file(filename)
             if success:
                 response = Protocol.create_response(
@@ -109,13 +115,15 @@ class Server:
                 )
 
         elif command == "EDIT_FILE":
+            user_id = self.user_sessions[websocket]
             filename = request["data"]["filename"]
             operation = request["data"]["operation"]
+            current_time = str(datetime.datetime.now())
+
+            self.history_changes[filename] = [user_id, current_time, operation]
 
             self.session_manager.start_session(filename, websocket)
-
             self.session_manager.apply_operation(filename, operation)
-
             content = self.session_manager.get_content(filename)
 
             self.file_manager.save_file(
@@ -128,7 +136,7 @@ class Server:
 
         elif command == "SAVE_CONTENT":
             filename = request["data"]["filename"]
-            content = request["data"]["content"]
+            content = self.session_manager.get_content(filename)
 
             success, error = self.file_manager.save_file(filename, content)
             # if success:
@@ -150,6 +158,7 @@ class Server:
 
         if response:
             await websocket.send(json.dumps(response))
+
 
 if __name__ == "__main__":
     server = Server()

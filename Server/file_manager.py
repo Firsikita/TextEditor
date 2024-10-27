@@ -1,4 +1,5 @@
 import os
+import json
 
 
 class FileManager:
@@ -19,7 +20,8 @@ class FileManager:
         if not os.path.exists(filepath):
             return False, None
         with open(filepath, "r") as f:
-            return True, f.read()
+            content = [line.strip() for line in f.readlines()]
+            return True, content
 
     def create_file(self, filename):
         filepath = os.path.join(self.base_dir, filename)
@@ -46,7 +48,42 @@ class FileManager:
         filepath = os.path.join(self.base_dir, filename)
         try:
             with open(filepath, "w") as f:
-                f.write(content)
+                f.writelines(line + "\n" for line in content)
             return True, None
         except Exception as e:
             return False, str(e)
+
+    def save_history(self, filename, data):
+        user_id = data[0]
+        time = data[1]
+        operation = data[2]
+
+        history_file = "./Server/file_history.json"
+
+        all_history = self.load_history()
+
+        history_entry = {
+            "user_id": user_id,
+            "time": time,
+            "operation": operation,
+        }
+
+        if filename not in all_history:
+            all_history[filename] = []
+        all_history[filename].append(history_entry)
+
+        with open(history_file, 'w') as file:
+            json.dump(all_history, file, indent=4)
+
+    def load_history(self):
+        history_file = "./Server/file_history.json"
+
+        if os.path.exists(history_file):
+            with open(history_file, 'r') as file:
+                try:
+                    history = json.load(file)
+                    return history
+                except json.JSONDecodeError:
+                    print(f"Error decoding JSON from file: {history_file}")
+                    return {}
+        return {}

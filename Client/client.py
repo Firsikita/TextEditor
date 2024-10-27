@@ -10,7 +10,7 @@ class Client:
     def __init__(self, server_uri):
         self.editor = None
         self.server_uri = server_uri
-        self.current_content = ""
+        self.current_content = ''
         self.filename = None
         self.user_id = None
 
@@ -107,7 +107,8 @@ class Client:
             self.filename = filename
             content = result["data"].get("content", "")
             self.current_content = content
-            print(self.current_content)
+            for line in self.current_content:
+                print(line)
         else:
             print(f"Error: {result['data']['error']}")
 
@@ -154,6 +155,7 @@ class Client:
             self.filename = filename
             content = result["data"]["content"]
             self.current_content = content
+            print(f"Content: {self.current_content}")
 
             stop_event = asyncio.Event()
             await self.editor.edit(
