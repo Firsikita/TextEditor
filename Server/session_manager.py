@@ -26,9 +26,7 @@ class SessionManager:
     def stop_session(self, filename, websocket):
         if filename in self.open_files:
             if websocket in self.sessions[filename]:
-                print(
-                    f"disconnect websocket {websocket} from session {filename}"
-                )
+                print(f"websocket {websocket} disconnected from session {filename}")
                 self.sessions[filename].discard(websocket)
                 if not self.sessions[filename]:
                     del self.sessions[filename]
@@ -52,9 +50,10 @@ class SessionManager:
                     + self.open_files[filename][start_y][start_x:]
                 )
             elif operation["op_type"] == "delete":
-                end_y, end_x = operation["end_pos"]["y"], operation["end_pos"]['x']
+                end_y, end_x = operation["end_pos"]["y"], operation["end_pos"]["x"]
                 print(
-                    f"send_delete_message:\nstart_x={start_x}\nstart_y={start_y}\nend_x={end_x}\nend_y={end_y}\n")
+                    f"send_delete_message:\nstart_x={start_x}\nstart_y={start_y}\nend_x={end_x}\nend_y={end_y}\n"
+                )
                 if start_y == end_y:
                     self.open_files[filename][start_y] = (
                         self.open_files[filename][start_y][:start_x]
@@ -66,12 +65,19 @@ class SessionManager:
                         if safe_list_get(self.open_files[filename], i, 0) != 0:
                             self.open_files[filename].pop(i)
 
-                    self.open_files[filename][start_y] = self.open_files[filename][start_y][:start_x] + close_line
+                    self.open_files[filename][start_y] = (
+                        self.open_files[filename][start_y][:start_x] + close_line
+                    )
 
             elif operation["op_type"] == "new line":
-                start_y, start_x = operation["start_pos"]["y"], operation["start_pos"]["x"]
+                start_y, start_x = (
+                    operation["start_pos"]["y"],
+                    operation["start_pos"]["x"],
+                )
                 new_line = self.open_files[filename][start_y][start_x:]
-                self.open_files[filename][start_y] = self.open_files[filename][start_y][:start_x]
+                self.open_files[filename][start_y] = self.open_files[filename][start_y][
+                    :start_x
+                ]
                 self.open_files[filename].insert(start_y + 1, new_line)
 
     async def share_update(self, filename, operation, websocket):
@@ -87,7 +93,10 @@ class SessionManager:
                             {
                                 "operation": {
                                     "op_type": "insert",
-                                    "start_pos": {"y": operation["start_pos"]["y"], "x": operation["start_pos"]["x"]},
+                                    "start_pos": {
+                                        "y": operation["start_pos"]["y"],
+                                        "x": operation["start_pos"]["x"],
+                                    },
                                     "text": operation["text"],
                                 },
                                 "filename": filename,
@@ -99,22 +108,30 @@ class SessionManager:
                             {
                                 "operation": {
                                     "op_type": operation["op_type"],
-                                    "start_pos": {"y": operation["start_pos"]["y"], "x": operation["start_pos"]["x"]},
-                                    "end_pos": {"y": operation["end_pos"]["y"], "x": operation["end_pos"]["x"]},
+                                    "start_pos": {
+                                        "y": operation["start_pos"]["y"],
+                                        "x": operation["start_pos"]["x"],
+                                    },
+                                    "end_pos": {
+                                        "y": operation["end_pos"]["y"],
+                                        "x": operation["end_pos"]["x"],
+                                    },
                                 },
                                 "filename": filename,
                             },
                         )
-                    elif operation['op_type'] == "new line":
+                    elif operation["op_type"] == "new line":
                         message = Protocol.create_message(
                             "EDIT_FILE",
                             {
                                 "operation": {
                                     "op_type": operation["op_type"],
-                                    "start_pos": {"y": operation["start_pos"]["y"],
-                                                  "x": operation["start_pos"]["x"]}
+                                    "start_pos": {
+                                        "y": operation["start_pos"]["y"],
+                                        "x": operation["start_pos"]["x"],
+                                    },
                                 }
-                            }
+                            },
                         )
                     await client.send(message)
         except Exception as e:

@@ -2,9 +2,6 @@ import curses
 import asyncio
 import json
 import time
-import pyperclip
-#import pdb
-
 from Shared.protocol import Protocol
 
 
@@ -14,6 +11,10 @@ class Editor:
         self.clipboard = ''
         self.start_selection_y, self.start_selection_x = None, None
         self.end_selection_y, self.end_selection_x = None, None
+
+    @staticmethod
+    async def send_ack(websocket):
+        await websocket.send(Protocol.create_message("ACK", None))
 
     async def edit(self, content, filename, stop_event, websocket):
         await asyncio.get_event_loop().run_in_executor(
@@ -32,6 +33,7 @@ class Editor:
             "SAVE_CONTENT", {"filename": filename, "content": "".join(content)}
         )
         await websocket.send(message)
+        await self.send_ack(websocket)
 
     async def listen_for_update(
             self, websocket, stdscr, current_content, cursor_y, cursor_x
@@ -39,7 +41,7 @@ class Editor:
         try:
             while True:
                 message = await websocket.recv()
-                update = json.loads(message)
+                update = Protocol.parse_response(message)
                 operation = update["data"]["operation"]
 
                 if operation["op_type"] == "insert":
@@ -51,10 +53,10 @@ class Editor:
                     start_y, start_x = operation["start_pos"]["y"], operation["start_pos"]["x"]
                     end_y, end_x = operation["end_pos"]["y"], operation["end_pos"]["x"]
                     if start_y == end_y:
-                        current_content[start_y] = current_content[start_y][:start_x] + current_content[start_y][end_y:]
+                        current_content[start_y] = current_content[start_y][:start_x] + current_content[start_y][end_x:]
                     else:
                         close_line = current_content[end_y][end_x:]
-                        for i in range(start_y + 1, end_y + 1):
+                        for i in range(end_y, start_y, -1):
                             current_content.pop(i)
                         current_content[start_y] = current_content[start_y][:start_x] + close_line
 
@@ -148,6 +150,9 @@ class Editor:
             asyncio.run_coroutine_threadsafe(
                 websocket.send(message), event_loop
             )
+            asyncio.run_coroutine_threadsafe(
+                self.send_ack(websocket), event_loop
+            )
 
     def send_delete_message(self, websocket, filename, start_y, start_x, end_y, end_x, count, event_loop):
         if count > 0:
@@ -165,6 +170,9 @@ class Editor:
             asyncio.run_coroutine_threadsafe(
                 websocket.send(message), event_loop
             )
+            asyncio.run_coroutine_threadsafe(
+                self.send_ack(websocket), event_loop
+            )
 
     def send_new_line(self, websocket, filename, start_y, start_x, event_loop):
         message = Protocol.create_message(
@@ -179,6 +187,9 @@ class Editor:
         )
         asyncio.run_coroutine_threadsafe(
             websocket.send(message), event_loop
+        )
+        asyncio.run_coroutine_threadsafe(
+            self.send_ack(websocket), event_loop
         )
 
     def curses_editor(
@@ -228,6 +239,8 @@ class Editor:
                     ),
                     event_loop,
                 )
+                asyncio.run_coroutine_threadsafe(
+                    self.send_ack(websocket), event_loop)
                 break
 
             elif key in (curses.KEY_BACKSPACE, 8, 127):

@@ -15,7 +15,7 @@ A collaborative, terminal-based text editor that supports real-time, multi-user 
 
 ## Install
 1. Clone the repository
-`git clone ...`
+`git clone https://github.com/Firsikita/TextEditor`
 `cd editordir`
 2. `pip install -r requierments.txt`
 
@@ -31,7 +31,9 @@ A collaborative, terminal-based text editor that supports real-time, multi-user 
 * `Backspace`: Delete the char before the cursor
 * `Arrow Keys`: Move the cursor around the document
 * `Character keys`: Insert characters at the cursor position
-* ...
+* `Ctrl + E`: Start and end selection mode
+* `Ctrl + U`: Copy selection
+* `Ctrl + V`: Paste from clipboard
 
 
 ## Project Structure

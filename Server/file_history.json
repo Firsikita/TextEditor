@@ -1467,6 +1467,805 @@
                 "length": 1,
                 "text": "\u0192"
             }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:07:58.328388",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 2
+                },
+                "length": 3,
+                "text": "llo"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:08:22.960985",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "length": 5,
+                "text": "hello"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:08:49.597848",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 1
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 2
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:12:48.722097",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "length": 2,
+                "text": "^)"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:33:43.944776",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 7
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:50:21.036295",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 3
+                },
+                "length": 2,
+                "text": "lo"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:54:08.013376",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 6
+                },
+                "length": 4,
+                "text": "bobo"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:55:32.679994",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 10
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 22:57:57.002544",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 4
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 5
+                }
+            }
+        },
+        {
+            "user_id": "\u0444",
+            "time": "2024-10-27 22:59:34.314593",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 6
+                },
+                "length": 4,
+                "text": "bubu"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 23:00:24.682649",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 10
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-27 23:01:43.771550",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 4
+                },
+                "length": 1,
+                "text": "o"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 00:33:10.795639",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 2
+                },
+                "length": 3,
+                "text": "llo"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 00:34:41.531682",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "length": 1,
+                "text": "h"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 00:46:14.145506",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 2
+                },
+                "length": 3,
+                "text": "llo"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 00:48:31.103653",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 6
+                },
+                "length": 3,
+                "text": "llo"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 00:49:06.778017",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 1
+                },
+                "length": 4,
+                "text": "ello"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 00:52:23.900805",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 6
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 11
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 00:52:23.900805",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 6
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 11
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 00:57:22.573012",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 4
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 5
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 01:00:00.681087",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 4
+                },
+                "length": 1,
+                "text": "o"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 01:02:09.522053",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 6
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 01:05:41.282462",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 7
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 8
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 01:05:41.282462",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 7
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 8
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 01:09:24.947996",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 7
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 10
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 01:09:24.947996",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 7
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 10
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 01:09:24.947996",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 7
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 10
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 01:29:50.653855",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "length": 5,
+                "text": "hello"
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 01:30:29.987809",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 1,
+                    "x": 0
+                },
+                "length": 4,
+                "text": "nice"
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 01:30:29.987809",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 1,
+                    "x": 0
+                },
+                "length": 4,
+                "text": "nice"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 02:42:56.294069",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 1
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 5
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 02:43:09.713635",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "length": 1,
+                "text": "p"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 02:43:22.041149",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 1,
+                    "x": 0
+                },
+                "length": 2,
+                "text": "hi"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 02:43:33.965352",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 1,
+                    "x": 2
+                }
+            }
+        },
+        {
+            "user_id": "",
+            "time": "2024-10-28 02:43:54.894570",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "length": 1,
+                "text": "o"
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 02:45:44.093198",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 6
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 02:45:44.093198",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 6
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 02:46:26.910593",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 5
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 02:46:26.910593",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 5
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 02:53:56.729913",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 6
+                }
+            }
+        },
+        {
+            "user_id": "n",
+            "time": "2024-10-28 02:54:55.620714",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 4
+                }
+            }
+        },
+        {
+            "user_id": "n",
+            "time": "2024-10-28 02:54:55.620714",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 4
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 02:55:52.697935",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "length": 6,
+                "text": "hellop"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 02:55:52.697935",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "length": 6,
+                "text": "hellop"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 02:59:28.647546",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 7
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 02:59:39.275379",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 6
+                }
+            }
+        },
+        {
+            "user_id": "b",
+            "time": "2024-10-28 02:59:42.806615",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "length": 1,
+                "text": "p"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:01:44.419019",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "length": 5,
+                "text": "hello"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:01:59.277610",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 1
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 5
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:02:11.364305",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 1,
+                    "x": 0
+                },
+                "length": 1,
+                "text": "p"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:08:53.065239",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 5
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 6
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:09:03.984918",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 1,
+                    "x": 0
+                },
+                "length": 1,
+                "text": "p"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:18:34.706256",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 0,
+                    "x": 0
+                },
+                "length": 5,
+                "text": "hello"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:19:29.757993",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 0,
+                    "x": 2
+                },
+                "end_pos": {
+                    "y": 0,
+                    "x": 5
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:19:41.504776",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 1,
+                    "x": 0
+                },
+                "length": 9,
+                "text": "llopdsdsd"
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:20:28.654343",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 1,
+                    "x": 0
+                },
+                "end_pos": {
+                    "y": 5,
+                    "x": 0
+                }
+            }
+        },
+        {
+            "user_id": "a",
+            "time": "2024-10-28 03:20:44.559659",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 1,
+                    "x": 0
+                },
+                "length": 3,
+                "text": "llo"
+            }
         }
     ],
     "test2.txt": [

@@ -15,6 +15,7 @@ class Server:
         self.clients = set()
         self.user_sessions = {}
         self.history_changes = {}
+        self.client_readiness = {}
 
     async def start(self, host="localhost", port=8765):
         async with websockets.serve(self.echo, host, port):
@@ -23,9 +24,8 @@ class Server:
 
     async def echo(self, websocket, path):
         self.clients.add(websocket)
-        print(
-            f"New client connected: {websocket}. Total users: {len(self.clients)}"
-        )
+        self.client_readiness[websocket] = False
+        print(f"New client connected: {websocket}. Total users: {len(self.clients)}")
         try:
             async for message in websocket:
                 request = Protocol.parse_request(message)
@@ -34,17 +34,19 @@ class Server:
             print(f"Connection closed: {e}")
         finally:
             self.clients.remove(websocket)
-            print(
-                f"Client disconnected: {websocket}. Total users: {len(self.clients)}"
-            )
+            del self.client_readiness[websocket]
+            print(f"Client disconnected: {websocket}. Total users: {len(self.clients)}")
 
     async def handle_request(self, request, websocket):
-        # print(f"Received request: {request}")
-
         command = request["command"]
         response = None
 
         if command == "PING":
+            return
+
+        elif command == "ACK":
+            self.client_readiness[websocket] = True
+            print(f"Client {self.user_sessions[websocket] if websocket in self.user_sessions else websocket} is ready.")
             return
 
         elif command == "LOGIN":
@@ -73,7 +75,7 @@ class Server:
                     )
                 else:
                     response = Protocol.create_response(
-                        "ERROR", {"error": "File not found"}
+                        "ERROR", {"error": content}
                     )
             else:
                 content = self.session_manager.open_files[filename]
@@ -124,13 +126,9 @@ class Server:
             self.session_manager.apply_operation(filename, operation)
             content = self.session_manager.get_content(filename)
 
-            self.file_manager.save_file(
-                filename, content
-            )
+            self.file_manager.save_file(filename, content)
 
-            await self.session_manager.share_update(
-                filename, operation, websocket
-            )
+            await self.session_manager.share_update(filename, operation, websocket)
 
         elif command == "SAVE_CONTENT":
             filename = request["data"]["filename"]
@@ -144,18 +142,42 @@ class Server:
             #    response = Protocol.create_response('SAVE_CONTENT',
             #                                        {'status': 'error',
             #                                         'error': error})
-        elif command == "update":
-            response = Protocol.create_response(
-                "update", {"status": "success"}
-            )
+
+        elif command == "GET_HISTORY":
+            filename = request["data"]["filename"]
+            try:
+                history = self.file_manager.load_history()[filename]
+                response = Protocol.create_response(
+                    "GET_HISTORY", {"status": "success", "history": history}
+                )
+            except Exception as e:
+                response = Protocol.create_response(
+                    "GET_HISTORY", {"status": "error", "error": str(e)}
+                )
 
         else:
-            response = Protocol.create_response(
-                "ERROR", {"error": "Unknown command"}
-            )
+            response = Protocol.create_response("ERROR", {"error": "Unknown command"})
 
         if response:
-            await websocket.send(json.dumps(response))
+            if websocket in self.client_readiness and self.client_readiness[websocket]:
+                print(f"Ready. Sending response: {response}")
+                await websocket.send(json.dumps(response))
+                await self.wait_for_ack(websocket)
+            else:
+                print(f"Client {websocket} is not ready. Message not sent.")
+
+    async def wait_for_ack(self, websocket):
+        try:
+            ack_msg = await asyncio.wait_for(websocket.recv(), timeout=5)
+            ack_request = Protocol.parse_request(ack_msg)
+            if ack_request["command"] == "ACK":
+                print(f"ACK received from user: {self.user_sessions[websocket]}")
+            else:
+                print(f"Unexpected message received instead of ACK: {ack_msg}")
+        except asyncio.TimeoutError:
+            print(
+                f"ACK not received from {self.user_sessions[websocket]} within timeout"
+            )
 
 
 if __name__ == "__main__":

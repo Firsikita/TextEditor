@@ -16,12 +16,15 @@ class FileManager:
 
     def open_file(self, filename):
         filepath = os.path.join(self.base_dir, filename)
-        print(f"path to file: {filepath}")
+        # print(f"path to file: {filepath}")
         if not os.path.exists(filepath):
             return False, None
-        with open(filepath, "r") as f:
-            content = [line.strip() for line in f.readlines()]
-            return True, content
+        try:
+            with open(filepath, "r") as f:
+                content = [line.strip() for line in f.readlines()]
+                return True, content
+        except Exception as e:
+            return False, str(e)
 
     def create_file(self, filename):
         filepath = os.path.join(self.base_dir, filename)
@@ -72,14 +75,15 @@ class FileManager:
             all_history[filename] = []
         all_history[filename].append(history_entry)
 
-        with open(history_file, 'w') as file:
+        with open(history_file, "w") as file:
             json.dump(all_history, file, indent=4)
 
-    def load_history(self):
+    @staticmethod
+    def load_history():
         history_file = "./Server/file_history.json"
 
         if os.path.exists(history_file):
-            with open(history_file, 'r') as file:
+            with open(history_file, "r") as file:
                 try:
                     history = json.load(file)
                     return history

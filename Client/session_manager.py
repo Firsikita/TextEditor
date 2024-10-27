@@ -13,9 +13,7 @@ class SessionManager:
             self.open_files[filename] = ""
 
     def apply_operation(self, filename, operation):
-        print(
-            f"CLIENT: apply operation {operation['op_type']} in file: {filename}"
-        )
+        print(f"CLIENT: apply operation {operation['op_type']} in file: {filename}")
         if filename in self.open_files:
             if operation["op_type"] == "insert":
                 pos = operation["pos"]
