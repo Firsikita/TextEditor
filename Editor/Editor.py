@@ -11,7 +11,7 @@ from Shared.protocol import Protocol
 class Editor:
     def __init__(self, event_loop):
         self.event_loop = event_loop
-        self.clipboard = ''
+        self.clipboard = []
         self.start_selection_y, self.start_selection_x = None, None
         self.end_selection_y, self.end_selection_x = None, None
 
@@ -50,10 +50,10 @@ class Editor:
                 elif operation["op_type"] == "delete":
                     start_y, start_x = operation["start_pos"]["y"], operation["start_pos"]["x"]
                     end_y, end_x = operation["end_pos"]["y"], operation["end_pos"]["x"]
+                    close_line = current_content[end_y][end_x:]
                     if start_y == end_y:
-                        current_content[start_y] = current_content[start_y][:start_x] + current_content[start_y][end_y:]
+                        current_content[start_y] = current_content[start_y][:start_x] + close_line
                     else:
-                        close_line = current_content[end_y][end_x:]
                         for i in range(start_y + 1, end_y + 1):
                             current_content.pop(i)
                         current_content[start_y] = current_content[start_y][:start_x] + close_line
@@ -64,19 +64,33 @@ class Editor:
                     current_content[start_y] = current_content[start_y][:start_x]
                     current_content.insert(start_y + 1, new_line)
 
+                elif operation["op_type"] == "insert_text":
+                    start_y, start_x = operation["start_pos"]["y"], operation["start_pos"]["x"]
+                    insert_text = operation["insert_text"]
+                    close_line = current_content[start_y][start_x:]
+                    for i in range(len(insert_text)):
+                        if i == 0:
+                            current_content[start_y] = current_content[start_y][:start_x] + insert_text[i]
+                        else:
+                            current_content.insert(start_y + i, insert_text[i])
+                    current_content[start_y + len(insert_text) - 1] += close_line
+
                 self.display_text(stdscr, current_content, cursor_y, cursor_x)
 
         except asyncio.CancelledError:
             pass
 
     def selection_left(self, stdscr, cursor_x, cursor_y, text):
-        if cursor_y == self.start_selection_y:
-            if self.end_selection_x is None:
-                stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x], curses.A_REVERSE)
-            elif self.end_selection_x >= cursor_x and self.end_selection_x >= self.start_selection_x: #отмена выделения вправо
-                stdscr.addch(cursor_y, self.end_selection_x, text[cursor_y][self.end_selection_x])
-            elif cursor_x <= self.end_selection_x <= self.start_selection_x: #выделение влево
-                stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x], curses.A_REVERSE)
+        if self.end_selection_x is None:
+            stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x], curses.A_REVERSE)
+            self.clipboard.append(text[cursor_y][cursor_x])
+        elif cursor_x <= self.end_selection_x <= self.start_selection_x: #выделение влево
+            stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x], curses.A_REVERSE)
+            self.clipboard[0] = text[cursor_y][cursor_x] + self.clipboard[0]
+        elif self.end_selection_x >= cursor_x and self.end_selection_x > self.start_selection_x: #отмена выделения вправо
+            stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x])
+            self.clipboard[0] = self.clipboard[0][:-1]
+
 
         self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
 
@@ -84,12 +98,57 @@ class Editor:
         if cursor_y == self.start_selection_y:
             if self.end_selection_x is None:
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x], curses.A_REVERSE)
+                self.clipboard.append(text[cursor_y][cursor_x])
             elif self.end_selection_x <= cursor_x and cursor_x >= self.start_selection_x:  # выделение вправо
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x], curses.A_REVERSE)
+                self.clipboard[0] += text[cursor_y][cursor_x]
             elif self.end_selection_x <= cursor_x and self.end_selection_x <= self.start_selection_x: #отмена выделения влево
-                stdscr.addch(cursor_y, self.end_selection_x, text[cursor_y][self.end_selection_x])
+                stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x])
+                self.clipboard[0] = self.clipboard[0][0:]
 
         self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
+
+    def selection_up(self, stdscr, cursor_x, cursor_y, text):
+        if len(self.clipboard) == 0:
+            stdscr.addstr(cursor_y, cursor_x, text[cursor_y][cursor_x:], curses.A_REVERSE)
+            stdscr.addstr(self.start_selection_y, 0, text[self.start_selection_y][:self.start_selection_x], curses.A_REVERSE)
+            self.clipboard.append(text[cursor_y][cursor_x:])
+            self.clipboard.append(text[self.start_selection_y][:self.start_selection_x])
+        else:
+            stdscr.addstr(cursor_y, cursor_x, text[cursor_y][cursor_x:], curses.A_REVERSE)
+            stdscr.addstr(self.end_selection_y, 0, text[self.end_selection_y][:self.end_selection_x], curses.A_REVERSE)
+            self.clipboard.append(text[cursor_y][cursor_x:])
+            self.clipboard.append(text[self.end_selection_y][:self.end_selection_x])
+
+        self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
+
+    def selection_down(self, stdscr, cursor_x, cursor_y, text):
+        if len(self.clipboard) == 0:
+            stdscr.addstr(self.start_selection_y, self.start_selection_x, text[self.start_selection_y][self.start_selection_x:], curses.A_REVERSE)
+            stdscr.addstr(cursor_y, 0, text[cursor_y][:cursor_x], curses.A_REVERSE)
+            self.clipboard.append(text[self.start_selection_y][self.start_selection_x:])
+            self.clipboard.append(text[cursor_y][:cursor_x])
+        else:
+            stdscr.addstr(self.end_selection_y, self.end_selection_x, text[self.end_selection_y][self.end_selection_x:], curses.A_REVERSE)
+            stdscr.addstr(cursor_y, 0, text[cursor_y][:cursor_x], curses.A_REVERSE)
+            self.clipboard.append(text[self.end_selection_y][self.end_selection_x:])
+            self.clipboard.append(text[cursor_y][:cursor_x])
+
+        self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
+
+    def insert_text(self, websocket, filename, current_content, cursor_y, cursor_x, event_loop):
+        text = pyperclip.paste()
+        text = text.split("\n")
+        close_line = current_content[cursor_y][cursor_x:]
+
+        for i in range(len(text)):
+            if i == 0:
+                current_content[cursor_y] = current_content[cursor_y][:cursor_x] + text[i]
+            else:
+                current_content.insert(cursor_y + i, text[i])
+        current_content[cursor_y + len(text) - 1] = current_content[cursor_y + len(text) - 1] + close_line
+
+        self.send_insert_text(websocket, filename, cursor_y, cursor_x, text, event_loop)
 
     def move_cursor_left(self, cursor_x, cursor_y, text):
         if cursor_x > 0:
@@ -174,6 +233,22 @@ class Editor:
                 "operation": {
                     "op_type": "new line",
                     "start_pos": {"y": start_y, "x": start_x},
+                },
+            },
+        )
+        asyncio.run_coroutine_threadsafe(
+            websocket.send(message), event_loop
+        )
+
+    def send_insert_text(self, websocket, filename, start_y, start_x, insert_text, event_loop):
+        message = Protocol.create_message(
+            "EDIT_FILE",
+            {
+                "filename": filename,
+                "operation": {
+                    "op_type": "insert_text",
+                    "start_pos": {"y": start_y, "x": start_x},
+                    "insert_text": insert_text,
                 },
             },
         )
@@ -312,6 +387,7 @@ class Editor:
                     key = stdscr.getch()
                     if key == 5:
                         self.start_selection_y, self.start_selection_x = None, None
+                        self.end_selection_y, self.end_selection_x = None, None
                         self.display_text(stdscr, current_content, cursor_y, cursor_x)
                         break
 
@@ -328,15 +404,25 @@ class Editor:
                         stdscr.refresh()
 
                     elif key == curses.KEY_UP:
-                        self.move_cursor_up(cursor_x, cursor_y, current_content)
+                        cursor_x, cursor_y = self.move_cursor_up(cursor_x, cursor_y, current_content)
+                        self.selection_up(stdscr, cursor_x, cursor_y, current_content)
+                        stdscr.move(cursor_y, cursor_x)
+                        stdscr.refresh()
+
                     elif key == curses.KEY_DOWN:
-                        self.move_cursor_down(cursor_x, cursor_y, current_content)
+                        cursor_x, cursor_y = self.move_cursor_down(cursor_x, cursor_y, current_content)
+                        self.selection_down(stdscr, cursor_x, cursor_y, current_content)
+                        stdscr.move(cursor_y, cursor_x)
+                        stdscr.refresh()
 
-                    # elif key == 21: #ctrl + u копирование
-                    #     pyperclip.copy(self.clipboard)
+                    elif key == 21: #ctrl + u копирование
+                        text = "\n".join(self.clipboard)
+                        self.clipboard = []
+                        pyperclip.copy(text)
 
-            # elif key == 22: #ctrl + v
-            #     text = pyperclip.paste()
+            elif key == 22: #ctrl + v
+                self.insert_text(websocket, filename, current_content, cursor_y, cursor_x, event_loop)
+                self.display_text(stdscr, current_content, cursor_y, cursor_x)
 
             if (time.time() - last_input_time) > 1:
                 self.send_edit_message(websocket, filename, inserted_text, start_y, start_x, event_loop)

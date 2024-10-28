@@ -660,6 +660,208 @@
                 "length": 2,
                 "text": "\u0223\u0223"
             }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 18:20:00.393123",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 4,
+                    "x": 71
+                },
+                "end_pos": {
+                    "y": 4,
+                    "x": 72
+                }
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 18:21:36.620127",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 4,
+                    "x": 64
+                },
+                "end_pos": {
+                    "y": 4,
+                    "x": 65
+                }
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 19:53:17.256752",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 4,
+                    "x": 72
+                },
+                "end_pos": {
+                    "y": 4,
+                    "x": 81
+                }
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 19:53:17.256752",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 4,
+                    "x": 72
+                },
+                "end_pos": {
+                    "y": 4,
+                    "x": 81
+                }
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 20:28:52.129068",
+            "operation": {
+                "op_type": "insert_text",
+                "start_pos": {
+                    "y": 4,
+                    "x": 44
+                },
+                "insert_text": [
+                    "insert_text"
+                ]
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 20:30:45.994665",
+            "operation": {
+                "op_type": "insert_text",
+                "start_pos": {
+                    "y": 4,
+                    "x": 48
+                },
+                "insert_text": [
+                    "insert_text"
+                ]
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 20:46:21.519902",
+            "operation": {
+                "op_type": "insert_text",
+                "start_pos": {
+                    "y": 4,
+                    "x": 37
+                },
+                "insert_text": [
+                    "start_y, start_x = operation[\"start_pos\"][\"y\"], operation[\"start_pos\"][\"x\"]"
+                ]
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 20:46:21.519902",
+            "operation": {
+                "op_type": "insert_text",
+                "start_pos": {
+                    "y": 4,
+                    "x": 37
+                },
+                "insert_text": [
+                    "start_y, start_x = operation[\"start_pos\"][\"y\"], operation[\"start_pos\"][\"x\"]"
+                ]
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 20:49:43.176065",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 4,
+                    "x": 78
+                },
+                "length": 1,
+                "text": "6"
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-27 20:49:43.176065",
+            "operation": {
+                "op_type": "insert",
+                "start_pos": {
+                    "y": 4,
+                    "x": 78
+                },
+                "length": 1,
+                "text": "6"
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-28 09:27:53.165596",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 4,
+                    "x": 2
+                },
+                "end_pos": {
+                    "y": 4,
+                    "x": 3
+                }
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-28 09:27:53.165596",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 4,
+                    "x": 2
+                },
+                "end_pos": {
+                    "y": 4,
+                    "x": 3
+                }
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-28 09:35:05.575709",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 4,
+                    "x": 64
+                },
+                "end_pos": {
+                    "y": 4,
+                    "x": 65
+                }
+            }
+        },
+        {
+            "user_id": "4",
+            "time": "2024-10-28 09:35:05.575709",
+            "operation": {
+                "op_type": "delete",
+                "start_pos": {
+                    "y": 4,
+                    "x": 64
+                },
+                "end_pos": {
+                    "y": 4,
+                    "x": 65
+                }
+            }
         }
     ],
     "a.txt": [

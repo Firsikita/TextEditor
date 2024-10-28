@@ -74,6 +74,17 @@ class SessionManager:
                 self.open_files[filename][start_y] = self.open_files[filename][start_y][:start_x]
                 self.open_files[filename].insert(start_y + 1, new_line)
 
+            elif operation["op_type"] == "insert_text":
+                start_y, start_x = operation["start_pos"]["y"], operation["start_pos"]["x"]
+                insert_text = operation["insert_text"]
+                close_line = self.open_files[filename][start_y][start_x:]
+                for i in range(len(insert_text)):
+                    if i == 0:
+                        self.open_files[filename][start_y] = self.open_files[filename][start_y][:start_x] + insert_text[i]
+                    else:
+                        self.open_files[filename].insert(start_y + i, insert_text[i])
+                self.open_files[filename][start_y + len(insert_text) - 1] = self.open_files[filename][start_y + len(insert_text) - 1] + close_line
+
     async def share_update(self, filename, operation, websocket):
         try:
             if filename not in self.sessions:
@@ -105,7 +116,7 @@ class SessionManager:
                                 "filename": filename,
                             },
                         )
-                    elif operation['op_type'] == "new line":
+                    elif operation["op_type"] == "new line":
                         message = Protocol.create_message(
                             "EDIT_FILE",
                             {
@@ -113,6 +124,17 @@ class SessionManager:
                                     "op_type": operation["op_type"],
                                     "start_pos": {"y": operation["start_pos"]["y"],
                                                   "x": operation["start_pos"]["x"]}
+                                }
+                            }
+                        )
+                    elif operation["op_type"] == "insert_text":
+                        message = Protocol.create_message(
+                            "EDIT_FILE",
+                            {
+                                "operation": {
+                                    "op_type": operation["op_type"],
+                                    "start_pos": {"y": operation["start_pos"]["y"], "x": operation["start_pos"]["x"]},
+                                    "insert_text": operation["insert_text"]
                                 }
                             }
                         )
