@@ -14,7 +14,7 @@ class FileManager:
         except OSError:
             return []
 
-    def open_file(self, filename):
+    def open_file(self, filename: str):
         filepath = os.path.join(self.base_dir, filename)
         print(f"path to file: {filepath}")
         if not os.path.exists(filepath):
@@ -23,7 +23,7 @@ class FileManager:
             content = [line.strip() for line in f.readlines()]
             return True, content
 
-    def create_file(self, filename):
+    def create_file(self, filename: str):
         filepath = os.path.join(self.base_dir, filename)
         if os.path.exists(filepath):
             return False, "File already exists"
@@ -34,7 +34,7 @@ class FileManager:
         except Exception as e:
             return False, str(e)
 
-    def delete_file(self, filename):
+    def delete_file(self, filename: str):
         filepath = os.path.join(self.base_dir, filename)
         if not os.path.exists(filepath):
             return False, "File does not exist"
@@ -44,7 +44,7 @@ class FileManager:
         except Exception as e:
             return False, str(e)
 
-    def save_file(self, filename, content):
+    def save_file(self, filename: str, content: list[str]):
         filepath = os.path.join(self.base_dir, filename)
         try:
             with open(filepath, "w") as f:
@@ -53,30 +53,16 @@ class FileManager:
         except Exception as e:
             return False, str(e)
 
-    def save_history(self, filename, data):
-        user_id = data[0]
-        time = data[1]
-        operation = data[2]
-
-        history_file = "./Server/file_history.json"
-
-        all_history = self.load_history()
-
-        history_entry = {
-            "user_id": user_id,
-            "time": time,
-            "operation": operation,
-        }
-
-        if filename not in all_history:
-            all_history[filename] = []
-        all_history[filename].append(history_entry)
+    def save_history(self, filename: str, all_history: dict[str, list[str]]):
+        filename = filename.removesuffix(".txt")
+        history_file = f"./Server/files_change_history/{filename}.json"
 
         with open(history_file, 'w') as file:
             json.dump(all_history, file, indent=4)
 
-    def load_history(self):
-        history_file = "./Server/file_history.json"
+    def load_history(self, filename: str):
+        filename = filename.removesuffix(".txt")
+        history_file = f"./Server/files_change_history/{filename}.json"
 
         if os.path.exists(history_file):
             with open(history_file, 'r') as file:

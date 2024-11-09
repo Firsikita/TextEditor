@@ -65,6 +65,8 @@ class Server:
             filename = request["data"]["filename"]
             if filename not in self.session_manager.open_files:
                 success, content = self.file_manager.open_file(filename)
+                self.history_changes[filename] = self.file_manager.load_history(filename)
+
                 print(f"AAA ---- {content}")
                 if success:
                     self.session_manager.start_session(filename, websocket)
@@ -88,6 +90,7 @@ class Server:
             self.session_manager.stop_session(filename, websocket)
             if filename in self.history_changes:
                 self.file_manager.save_history(filename, self.history_changes[filename])
+                self.history_changes.pop(filename)
 
         elif command == "CREATE_FILE":
             filename = request["data"]["filename"]
@@ -118,34 +121,32 @@ class Server:
             user_id = self.user_sessions[websocket]
             filename = request["data"]["filename"]
             operation = request["data"]["operation"]
-            current_time = str(datetime.datetime.now())
-
-            self.history_changes[filename] = [user_id, current_time, operation]
 
             self.session_manager.start_session(filename, websocket)
-            self.session_manager.apply_operation(filename, operation)
+            new_operation = self.session_manager.apply_operation(filename, user_id, operation, self.history_changes)
+            print(f"AAA ---- new operation{new_operation}")
             content = self.session_manager.get_content(filename)
 
             self.file_manager.save_file(
                 filename, content
             )
 
-            await self.session_manager.share_update(
-                filename, operation, websocket
-            )
+            if new_operation is None:
+                await self.session_manager.share_update(
+                    filename, operation, websocket
+                )
+            else:
+                await self.session_manager.share_update(
+                    filename, new_operation, websocket=None
+                )
+
 
         elif command == "SAVE_CONTENT":
             filename = request["data"]["filename"]
             content = self.session_manager.get_content(filename)
 
-            success, error = self.file_manager.save_file(filename, content)
-            # if success:
-            #    response = Protocol.create_response('SAVE_CONTENT',
-            #                                        {'status': 'success'})
-            # else:
-            #    response = Protocol.create_response('SAVE_CONTENT',
-            #                                        {'status': 'error',
-            #                                         'error': error})
+            self.file_manager.save_file(filename, content)
+
         elif command == "update":
             response = Protocol.create_response(
                 "update", {"status": "success"}

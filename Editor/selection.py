@@ -44,7 +44,7 @@ class Selection:
                                           self.end_selection_x < self.start_selection_x)\
             else self.end_selection_x
 
-    def selection_left(self, stdscr, cursor_x, cursor_y, text):
+    def selection_left(self, stdscr, cursor_x: int, cursor_y: int, text: list[str]):
         if self.container_y.is_empty():
             if self.container_x.is_empty():
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x], curses.A_REVERSE)
@@ -71,7 +71,7 @@ class Selection:
 
         self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
 
-    def selection_right(self, stdscr, cursor_x, cursor_y, text):
+    def selection_right(self, stdscr, cursor_x: int, cursor_y: int, text: list[str]):
         if self.container_y.is_empty():
             if self.container_x.is_empty():
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x], curses.A_REVERSE)
@@ -98,7 +98,7 @@ class Selection:
 
         self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
 
-    def selection_up(self, stdscr, cursor_x, cursor_y, text):
+    def selection_up(self, stdscr, cursor_x: int, cursor_y: int, text: list[str]):
         if self.container_y.is_empty():
             stdscr.addstr(cursor_y, cursor_x, text[cursor_y][cursor_x:], curses.A_REVERSE)
             stdscr.addstr(self.start_selection_y, 0, text[self.start_selection_y][:self.start_selection_x], curses.A_REVERSE)
@@ -122,7 +122,7 @@ class Selection:
 
         self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
 
-    def selection_down(self, stdscr, cursor_x, cursor_y, text):
+    def selection_down(self, stdscr, cursor_x: int, cursor_y: int, text: list[str]):
         if self.container_y.is_empty():
             stdscr.addstr(self.start_selection_y, self.start_selection_x, text[self.start_selection_y][self.start_selection_x:], curses.A_REVERSE)
             stdscr.addstr(cursor_y, 0, text[cursor_y][:cursor_x], curses.A_REVERSE)

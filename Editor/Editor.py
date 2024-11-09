@@ -18,7 +18,7 @@ class Editor:
         self.senderMessage = SendMessage()
         self.cursorMuver = CursorMuver()
 
-    async def edit(self, content, filename, stop_event, websocket):
+    async def edit(self, content: list[str], filename: str, stop_event, websocket):
         await asyncio.get_event_loop().run_in_executor(
             None,
             curses.wrapper,
@@ -30,14 +30,14 @@ class Editor:
             stop_event,
         )
 
-    async def save_content_file(self, filename, content, websocket):
+    async def save_content_file(self, filename: str, content: list[str], websocket):
         message = Protocol.create_message(
             "SAVE_CONTENT", {"filename": filename, "content": "".join(content)}
         )
         await websocket.send(message)
 
     async def listen_for_update(
-            self, websocket, stdscr, current_content, cursor_y, cursor_x
+            self, websocket, stdscr, current_content: list[str], cursor_y: int, cursor_x: int
     ):
         try:
             while True:
@@ -83,7 +83,9 @@ class Editor:
         except asyncio.CancelledError:
             pass
 
-    def insert_text(self, websocket, filename, current_content, cursor_y, cursor_x, event_loop):
+    def insert_text(self, websocket, filename: str, current_content: list[str],
+                    cursor_y: int, cursor_x: int, event_loop):
+
         text = pyperclip.paste()
         text = text.split("\n")
         close_line = current_content[cursor_y][cursor_x:]
@@ -95,15 +97,15 @@ class Editor:
                 current_content.insert(cursor_y + i, text[i])
         current_content[cursor_y + len(text) - 1] = current_content[cursor_y + len(text) - 1] + close_line
 
-        self.senderMessage.send_insert_text(websocket, filename, cursor_y, cursor_x, text, event_loop)
+        self.senderMessage.send_edit_message(websocket, filename, text, cursor_y, cursor_x, event_loop)
 
-    def input_enter(self, current_content, cursor_y, cursor_x):
+    def input_enter(self, current_content: list[str], cursor_y: int, cursor_x: int):
         new_line = current_content[cursor_y][cursor_x:]
         current_content[cursor_y] = current_content[cursor_y][:cursor_x]
 
         current_content.insert(cursor_y + 1, new_line)
 
-    def delite_pie(self, current_content, start_y, start_x, end_y, end_x):
+    def delite_pie(self, current_content: list[str], start_y: int, start_x: int, end_y: int, end_x: int):
         start_line = current_content[start_y][:start_x]
         close_line = current_content[end_y][end_x:]
         if start_y != end_y:
@@ -113,14 +115,14 @@ class Editor:
         current_content[start_y] = start_line + close_line
 
 
-    def display_text(self, stdscr, current_content, cursor_y, cursor_x):
+    def display_text(self, stdscr, current_content: list[str], cursor_y: int, cursor_x: int):
         stdscr.clear()
         for i, line in enumerate(current_content):
             stdscr.addstr(i, 0, line)
         stdscr.move(cursor_y, cursor_x)
 
     def curses_editor(
-            self, stdscr, content, filename, websocket, event_loop, stop_event
+            self, stdscr, content: list[str], filename: str, websocket, event_loop, stop_event
     ):
         curses.curs_set(1)
         stdscr.clear()
@@ -131,11 +133,11 @@ class Editor:
 
         last_input_time = time.time()
         start_y, start_x = None, None
-        inserted_text = ""
+        inserted_text = []
         count_delite_char = 0
         end_y, end_x = None, None
 
-        def update_line(y):
+        def update_line(y: int):
             stdscr.move(y, 0)
             stdscr.clrtoeol()
             stdscr.addstr(y, 0, current_content[y])
@@ -172,7 +174,7 @@ class Editor:
                 if inserted_text:
                     self.senderMessage.send_edit_message(websocket, filename, inserted_text, start_y, start_x, event_loop)
                     start_x, start_y = None, None
-                    inserted_text = ""
+                    inserted_text.clear()
 
                 if start_y is None and start_x is None:
                     start_y, start_x = cursor_y, cursor_x
@@ -231,7 +233,7 @@ class Editor:
                     self.senderMessage.send_delete_message(websocket, filename, end_y, end_x, start_y, start_x, count_delite_char, event_loop)
                     count_delite_char = 0
 
-                if inserted_text == "":
+                if not inserted_text:
                     start_y, start_x = cursor_y, cursor_x
 
                 while len(current_content) <= cursor_y:
@@ -241,7 +243,10 @@ class Editor:
                 cursor_x += 1
                 update_line(cursor_y)
 
-                inserted_text += chr(key)
+                if not inserted_text:
+                    inserted_text.append(chr(key))
+                else: inserted_text[0] = inserted_text[0] + chr(key)
+
                 last_input_time = time.time()
 
             elif key == 5: #ctrl + e выделение
@@ -297,10 +302,13 @@ class Editor:
                 self.insert_text(websocket, filename, current_content, cursor_y, cursor_x, event_loop)
                 self.display_text(stdscr, current_content, cursor_y, cursor_x)
 
+            elif key == 24: #ctrl + x
+                self.senderMessage.cancaling_changes(websocket, filename, event_loop)
+
             if (time.time() - last_input_time) > 1:
                 self.senderMessage.send_edit_message(websocket, filename, inserted_text, start_y, start_x, event_loop)
                 self.senderMessage.send_delete_message(websocket, filename, end_y, end_x, start_y, start_x, count_delite_char, event_loop)
-                inserted_text = ""
+                inserted_text.clear()
                 start_x, start_y = None, None
                 count_delite_char = 0
 
