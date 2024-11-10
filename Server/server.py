@@ -41,6 +41,7 @@ class Server:
     async def handle_request(self, request, websocket):
         # print(f"Received request: {request}")
 
+        user_id = self.user_sessions[websocket] if websocket in self.user_sessions else None
         command = request["command"]
         response = None
 
@@ -51,6 +52,7 @@ class Server:
             username = request["data"]["username"]
             user_id = username
             self.user_sessions[websocket] = user_id
+            self.file_manager.append_user(user_id)
             print(f"Client {username} logged in with user_id: {user_id}")
 
             response = Protocol.create_response(
@@ -58,13 +60,21 @@ class Server:
             )
 
         elif command == "GET_FILES":
-            files = self.file_manager.get_files()
+            files = self.file_manager.get_files(user_id)
+            if not files:
+                files = ["You don't have any file"]
             response = Protocol.create_response("GET_FILES", {"files": files})
+
+        elif command == "GET_ACCESS":
+            host_id = request["data"]["host_user"]
+            filename = request["data"]["filename"]
+            answer = self.file_manager.get_access(user_id, host_id, filename)
+            response = Protocol.create_response("GET_ACCESS", {"answer": answer})
 
         elif command == "OPEN_FILE":
             filename = request["data"]["filename"]
             if filename not in self.session_manager.open_files:
-                success, content = self.file_manager.open_file(filename)
+                success, content = self.file_manager.open_file(user_id, filename)
                 self.history_changes[filename] = self.file_manager.load_history(filename)
 
                 print(f"AAA ---- {content}")
@@ -94,7 +104,7 @@ class Server:
 
         elif command == "CREATE_FILE":
             filename = request["data"]["filename"]
-            success, error = self.file_manager.create_file(filename)
+            success, error = self.file_manager.create_file(user_id, filename)
             if success:
                 response = Protocol.create_response(
                     "CREATE_FILE", {"status": "success"}
@@ -107,7 +117,7 @@ class Server:
         elif command == "DELETE_FILE":
             filename = request["data"]["filename"]
             self.session_manager.stop_session(request["data"]["filename"], websocket)
-            success, error = self.file_manager.delete_file(filename)
+            success, error = self.file_manager.delete_file(user_id, filename)
             if success:
                 response = Protocol.create_response(
                     "DELETE_FILE", {"status": "success"}
@@ -128,7 +138,7 @@ class Server:
             content = self.session_manager.get_content(filename)
 
             self.file_manager.save_file(
-                filename, content
+                user_id, filename, content
             )
 
             if new_operation is None:
@@ -140,12 +150,11 @@ class Server:
                     filename, new_operation, websocket=None
                 )
 
-
         elif command == "SAVE_CONTENT":
             filename = request["data"]["filename"]
             content = self.session_manager.get_content(filename)
 
-            self.file_manager.save_file(filename, content)
+            self.file_manager.save_file(user_id, filename, content)
 
         elif command == "update":
             response = Protocol.create_response(

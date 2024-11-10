@@ -63,7 +63,8 @@ class Client:
                 "3. Create file",
                 "4. Edit file",
                 "5. Delete file",
-                "6. Exit",
+                "6. Get access",
+                "7. Exit",
                 sep="\n",
             )
             command = await aioconsole.ainput()
@@ -81,6 +82,8 @@ class Client:
                 await self.delete_file(websocket)
                 await self.get_files(websocket)
             if command == "6":
+                await self.get_access(websocket)
+            if command == "7":
                 print("Exiting")
                 break
 
@@ -141,6 +144,16 @@ class Client:
             print(
                 f"Error deleting file {filename}: {result['data']['error']}."
             )
+
+    async def get_access(self, websocket):
+        host_id = await aioconsole.ainput("Enter host id: ")
+        filename = await aioconsole.ainput("Enter file name: ")
+        await websocket.send(
+            Protocol.create_message("GET_ACCESS", {"host_user": host_id, "filename": filename})
+        )
+        response = await websocket.recv()
+        result = Protocol.parse_response(response)
+        print(result["data"]["answer"])
 
     async def edit_file(self, websocket):
         filename = await aioconsole.ainput("Enter file name to edit: ")

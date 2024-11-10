@@ -1,0 +1,21 @@
+[
+    {
+        "user_id": "nikita",
+        "current_time": "2024-11-10 14:18:35.855737",
+        "operation": {
+            "op_type": "insert",
+            "start_pos": {
+                "y": 0,
+                "x": 0
+            },
+            "length": 1,
+            "text": [
+                "alrarjnlavmnlakemrg;l"
+            ],
+            "end_pos": {
+                "y": 0,
+                "x": 21
+            }
+        }
+    }
+]
