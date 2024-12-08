@@ -218,7 +218,7 @@ class Client:
 
             return user
         else:
-            self.console.print(f"Error fetching users: {result["data"].get("error", "Unknown error")}.", style="#F08700")
+            self.console.print(f'Error fetching users: {result["data"].get("error", "Unknown error")}.", style="#F08700')
             return None
 
     async def grant_access(self, websocket, file_list):

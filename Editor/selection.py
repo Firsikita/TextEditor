@@ -56,31 +56,31 @@ class Selection:
                              curses.A_REVERSE)
                 self.clipboard.append(text[cursor_y][cursor_x])
                 self.container_x.add("Left")
+
             elif self.container_x.get_last() == "Left":  # Continue selecting left
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x],
                              curses.A_REVERSE)
-                self.clipboard[0] = text[cursor_y][cursor_x] + \
-                                    self.clipboard[0]
+                self.clipboard[self.clipboard_y] = text[cursor_y][cursor_x] + \
+                                    self.clipboard[self.clipboard_y]
                 self.container_x.add("Left")
+
             elif self.container_x.get_last() == "Right":  # Undo selection right
                 self.container_x.pop_last()
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x])
-                self.clipboard[0] = self.clipboard[0][:-1]
+                self.clipboard[self.clipboard_y] = self.clipboard[self.clipboard_y][:-1]
+
         elif self.container_y.get_last() == "Up":
             stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x],
                          curses.A_REVERSE)
-            self.clipboard[0] = text[cursor_y][cursor_x] + self.clipboard[
-                0]
+            self.clipboard[self.clipboard_y] = text[cursor_y][cursor_x] + self.clipboard[
+                self.clipboard_y]
+
         elif self.container_y.get_last() == "Down":
             stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x])
-            self.clipboard[0] = self.clipboard[0][:-1]
+            self.clipboard[self.clipboard_y] = self.clipboard[self.clipboard_y][:-1]
         self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
 
     def right(self, stdscr, cursor_x: int, cursor_y: int, text: list[str]):
-        # if cursor_y < 0 or cursor_y >= len(text) or cursor_x >= len(
-        #         text[cursor_y]) - 1:
-        #     return
-
         if self.container_y.is_empty():
             if self.container_x.is_empty():
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x],
@@ -91,36 +91,38 @@ class Selection:
             elif self.container_x.get_last() == "Right":  # выделение вправо
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x],
                              curses.A_REVERSE)
-                self.clipboard[0] += text[cursor_y][cursor_x]
+                self.clipboard[self.clipboard_y] += text[cursor_y][cursor_x]
                 self.container_x.add("Right")
 
             elif self.container_x.get_last() == "Left":  # отмена выделения влево
                 self.container_x.pop_last()
                 stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x])
-                self.clipboard[0] = self.clipboard[0][1:]
+                self.clipboard[self.clipboard_y] = self.clipboard[self.clipboard_y][1:]
 
         elif self.container_y.get_last() == "Up":
             stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x])
-            self.clipboard[0] = self.clipboard[0][1:]
+            self.clipboard[self.clipboard_y] = self.clipboard[self.clipboard_y][1:]
 
         elif self.container_y.get_last() == "Down":
             stdscr.addch(cursor_y, cursor_x, text[cursor_y][cursor_x],
                          curses.A_REVERSE)
-            self.clipboard[0] += text[cursor_y][cursor_x]
+            self.clipboard[self.clipboard_y] += text[cursor_y][cursor_x]
 
         self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
 
     def up(self, stdscr, cursor_x: int, cursor_y: int, text: list[str]):
-        # if cursor_y <= 0:
-        #     return
-
         if self.container_y.is_empty():
             stdscr.addstr(cursor_y, cursor_x, text[cursor_y][cursor_x:],
                           curses.A_REVERSE)
             stdscr.addstr(self.start_selection_y, 0,
                           text[self.start_selection_y][
                           :self.start_selection_x], curses.A_REVERSE)
-            self.clipboard.append(text[cursor_y][cursor_x:])
+
+            if self.container_x.is_empty():
+                self.clipboard.append(text[cursor_y][cursor_x:])
+            if not self.container_x.is_empty():
+                self.clipboard[0] = text[cursor_y][cursor_x:]
+
             self.clipboard.append(
                 text[self.start_selection_y][:self.start_selection_x])
             self.container_y.add("Up")
@@ -142,23 +144,27 @@ class Selection:
             stdscr.addstr(cursor_y, cursor_x, text[cursor_y][cursor_x:])
             self.clipboard.pop(-1)
             self.clipboard[-1] = text[cursor_y][:cursor_x]
+            self.clipboard_y -= 1
 
         self.end_selection_y, self.end_selection_x = cursor_y, cursor_x
 
     def down(self, stdscr, cursor_x: int, cursor_y: int, text: list[str]):
-        # if cursor_y >= len(text) - 1:
-        #     return
-
-        if self.container_y.is_empty( ):
+        if self.container_y.is_empty():
             stdscr.addstr(self.start_selection_y, self.start_selection_x,
                           text[self.start_selection_y][
                           self.start_selection_x:], curses.A_REVERSE)
             stdscr.addstr(cursor_y, 0, text[cursor_y][:cursor_x],
                           curses.A_REVERSE)
-            self.clipboard.append(
-                text[self.start_selection_y][self.start_selection_x:])
+
+            if self.container_x.is_empty():
+                self.clipboard.append(
+                    text[self.start_selection_y][self.start_selection_x:])
+            if not self.container_x.is_empty():
+                self.clipboard[0] = text[self.start_selection_y][self.start_selection_x:]
+
             self.clipboard.append(text[cursor_y][:cursor_x])
             self.container_y.add("Down")
+            self.clipboard_y += 1
 
         elif self.container_y.get_last() == "Down":
             stdscr.addstr(self.end_selection_y, self.end_selection_x,
@@ -170,6 +176,7 @@ class Selection:
                 text[self.end_selection_y][self.end_selection_x:])
             self.clipboard.append(text[cursor_y][:cursor_x])
             self.container_y.add("Down")
+            self.clipboard += 1
 
         elif self.container_y.get_last() == "Up":
             self.container_y.pop_last()
