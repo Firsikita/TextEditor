@@ -204,10 +204,12 @@ class TestSessionManager(unittest.TestCase):
             "operation": {
                 "op_type": "delete",
                 "start_pos": {"y": 0, "x": 7},
-                "end_pos": {"y": 0, "x": 12},
+                "end_pos": {"y": 0, "x": 13},
                 "text": ["world!"]
             }
         }
+
+        self.session_manager.apply_operation(filename, "fake_id", last_change["operation"], {})
 
         result = self.session_manager.cancel_change(last_change, filename)
 

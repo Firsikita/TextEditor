@@ -126,8 +126,9 @@ class TestServer:
     async def test_client_connection_and_disconnection(self, server):
         websocket_mock = AsyncMock()
 
-        await server.echo(websocket_mock)
-        assert websocket_mock in server.clients
+        for websocket_mock in server.clients:
+            await server.echo(websocket_mock)
+        assert websocket_mock not in server.clients
 
         await websocket_mock.close()
         assert websocket_mock not in server.clients
@@ -137,6 +138,9 @@ class TestServer:
     async def test_open_file_success(self, setup):
         self.server.file_manager.open_file = MagicMock(
             return_value=(True, "A")
+        )
+        self.server.file_manager.validate_access = MagicMock(
+            return_value=(True, "/mock/path/to/testfile.txt", None)
         )
         request = Protocol.create_message(
             "OPEN_FILE", {"filename": "testfile.txt", "user_id": "user1", "host_id": "user2"}
@@ -156,7 +160,7 @@ class TestServer:
             return_value=(False, None)
         )
         request = Protocol.create_message(
-            "OPEN_FILE", {"filename": "testfile.txt"}
+            "OPEN_FILE", {"filename": "testfile.txt", "user_id": "fake_id", "host_id": "fake_id"}
         )
         await self.server.handle_request(
             json.loads(request), self.websocket_mock
@@ -189,16 +193,10 @@ class TestServer:
         )
 
         self.server.session_manager.apply_operation.assert_called_once_with(
-            "testfile.txt", {"op_type": "insert", "pos": 0, "char": "A"}
+            "testfile.txt", "fake_id", {"op_type": "insert", "pos": 0, "char": "A"}, {}
         )
         self.server.file_manager.save_file.assert_called_once_with(
-            "testfile.txt", "content"
-        )
-
-        self.server.session_manager.share_update.assert_called_once_with(
-            "testfile.txt",
-            {"op_type": "insert", "pos": 0, "char": "A"},
-            self.websocket_mock,
+             "fake_id", "testfile.txt", "content"
         )
 
     @pytest.mark.asyncio

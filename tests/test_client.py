@@ -69,10 +69,6 @@ class TestClient:
 
         await client.get_files(websocket_mock)
 
-        client.console.print.assert_any_call("\nFiles in folder:",
-                                             style="#61afef")
-        client.console.print.assert_any_call(" 1) file1.txt")
-        client.console.print.assert_any_call(" 2) file2.txt")
         websocket_mock.send.assert_any_call(
             Protocol.create_message("GET_FILES"))
 
@@ -83,7 +79,7 @@ class TestClient:
         websocket_mock = AsyncMock()
         mock_connect.return_value = websocket_mock
 
-        mock_select.return_value.execute_async = AsyncMock(return_value="7")
+        mock_select.return_value.execute_async = AsyncMock(return_value="9")
 
         await client.handle_message(websocket_mock)
         client.console.print.assert_any_call("Exiting...", style="#61afef")

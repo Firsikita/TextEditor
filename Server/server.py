@@ -40,8 +40,6 @@ class Server:
             )
 
     async def handle_request(self, request, websocket):
-        # print(f"Received request: {request}")
-
         user_id = self.user_sessions[websocket] if websocket in self.user_sessions else None
         command = request["command"]
         response = None
@@ -197,18 +195,12 @@ class Server:
             except Exception as e:
                 response = Protocol.create_response("GET_REGISTERED_USERS", {"status": "error", "error": str(e)})
 
-        elif command == "update":
-            response = Protocol.create_response(
-                "update", {"status": "success"}
-            )
-
         else:
             response = Protocol.create_response(
                 "ERROR", {"error": "Unknown command"}
             )
 
         if response:
-            print("RESPONSE:", response)
             await websocket.send(json.dumps(response))
 
 
