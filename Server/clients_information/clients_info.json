@@ -1,0 +1,23 @@
+{
+    "irina": {
+        "host_access": {
+            "nikita": {
+                "files": [
+                    "n.txt"
+                ]
+            }
+        }
+    },
+    "nikita": {
+        "host_access": {}
+    },
+    "lexa": {
+        "host_access": {
+            "nikita": {
+                "files": [
+                    "n.txt"
+                ]
+            }
+        }
+    }
+}
