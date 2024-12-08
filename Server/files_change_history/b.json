@@ -1,0 +1,21 @@
+[
+    {
+        "user_id": "irina",
+        "time": "2024-12-07 18:28:52.132097",
+        "operation": {
+            "op_type": "insert",
+            "start_pos": {
+                "y": 0,
+                "x": 6
+            },
+            "length": 1,
+            "text": [
+                "))"
+            ],
+            "end_pos": {
+                "y": 0,
+                "x": 8
+            }
+        }
+    }
+]
