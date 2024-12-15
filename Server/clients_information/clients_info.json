@@ -9,7 +9,13 @@
         }
     },
     "nikita": {
-        "host_access": {}
+        "host_access": {
+            "irina": {
+                "files": [
+                    "ru_chars.txt"
+                ]
+            }
+        }
     },
     "lexa": {
         "host_access": {

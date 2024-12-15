@@ -1,9 +1,11 @@
 import pytest
 from Editor.cursor_mover import CursorMover
 
+
 @pytest.fixture
 def cursor_mover():
     return CursorMover()
+
 
 @pytest.mark.parametrize(
     "cursor_x, cursor_y, text, expected",
@@ -59,6 +61,7 @@ def test_up(cursor_mover, cursor_x, cursor_y, text, expected):
 def test_down(cursor_mover, cursor_x, cursor_y, text, expected):
     result = cursor_mover.down(cursor_x, cursor_y, text)
     assert result == expected
+
 
 if __name__ == "__main__":
     pytest.main()

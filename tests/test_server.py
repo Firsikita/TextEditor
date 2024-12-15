@@ -46,7 +46,7 @@ class TestServer:
         server.file_manager.append_user = Mock()
         await server.handle_request(
             {"command": "LOGIN", "data": {"username": "test_user"}},
-            websocket_mock
+            websocket_mock,
         )
 
         assert websocket_mock in server.user_sessions
@@ -73,8 +73,9 @@ class TestServer:
 
         server.file_manager.get_files.return_value = ["file1.txt", "file2.txt"]
         server.user_sessions[websocket_mock] = "test_user"
-        await server.handle_request({"command": "GET_FILES", "data": {}},
-                                    websocket_mock)
+        await server.handle_request(
+            {"command": "GET_FILES", "data": {}}, websocket_mock
+        )
 
         server.file_manager.get_files.assert_called_with("test_user")
         websocket_mock.send.assert_called_with(
@@ -97,10 +98,7 @@ class TestServer:
         expected_response = Protocol.create_response(
             "GET_FILES", {"files": ["file1.txt", "file2.txt"]}
         )
-        self.websocket_mock.send.assert_called_once_with(
-            json.dumps(expected_response)
-        )
-
+        self.websocket_mock.send.assert_called_once_with(json.dumps(expected_response))
 
     @pytest.mark.asyncio
     @patch("Server.server.Protocol")
@@ -121,7 +119,6 @@ class TestServer:
             '{"type": "ERROR", "data": {"error": "Unknown command"}}'
         )
 
-
     @pytest.mark.asyncio
     async def test_client_connection_and_disconnection(self, server):
         websocket_mock = AsyncMock()
@@ -133,21 +130,21 @@ class TestServer:
         await websocket_mock.close()
         assert websocket_mock not in server.clients
 
-
     @pytest.mark.asyncio
     async def test_open_file_success(self, setup):
-        self.server.file_manager.open_file = MagicMock(
-            return_value=(True, "A")
-        )
+        self.server.file_manager.open_file = MagicMock(return_value=(True, "A"))
         self.server.file_manager.validate_access = MagicMock(
             return_value=(True, "/mock/path/to/testfile.txt", None)
         )
         request = Protocol.create_message(
-            "OPEN_FILE", {"filename": "testfile.txt", "user_id": "user1", "host_id": "user2"}
+            "OPEN_FILE",
+            {
+                "filename": "testfile.txt",
+                "user_id": "user1",
+                "host_id": "user2",
+            },
         )
-        await self.server.handle_request(
-            json.loads(request), self.websocket_mock
-        )
+        await self.server.handle_request(json.loads(request), self.websocket_mock)
 
         expected_response = Protocol.create_message(
             "OPEN_FILE", {"status": "success", "content": "A"}
@@ -156,15 +153,16 @@ class TestServer:
 
     @pytest.mark.asyncio
     async def test_open_file_error(self, setup):
-        self.server.file_manager.open_file = MagicMock(
-            return_value=(False, None)
-        )
+        self.server.file_manager.open_file = MagicMock(return_value=(False, None))
         request = Protocol.create_message(
-            "OPEN_FILE", {"filename": "testfile.txt", "user_id": "fake_id", "host_id": "fake_id"}
+            "OPEN_FILE",
+            {
+                "filename": "testfile.txt",
+                "user_id": "fake_id",
+                "host_id": "fake_id",
+            },
         )
-        await self.server.handle_request(
-            json.loads(request), self.websocket_mock
-        )
+        await self.server.handle_request(json.loads(request), self.websocket_mock)
         expected_response = Protocol.create_message(
             "ERROR", {"error": "File not found"}
         )
@@ -173,9 +171,7 @@ class TestServer:
     @pytest.mark.asyncio
     async def test_edit_file(self, setup):
         self.server.session_manager = MagicMock()
-        self.server.session_manager.get_content = MagicMock(
-            return_value="content"
-        )
+        self.server.session_manager.get_content = MagicMock(return_value="content")
         self.server.user_sessions[self.websocket_mock] = "fake_id"
         self.server.session_manager.share_update = AsyncMock()
         self.server.file_manager.save_file = MagicMock()
@@ -193,10 +189,13 @@ class TestServer:
         )
 
         self.server.session_manager.apply_operation.assert_called_once_with(
-            "testfile.txt", "fake_id", {"op_type": "insert", "pos": 0, "char": "A"}, {}
+            "testfile.txt",
+            "fake_id",
+            {"op_type": "insert", "pos": 0, "char": "A"},
+            {},
         )
         self.server.file_manager.save_file.assert_called_once_with(
-             "fake_id", "testfile.txt", "content"
+            "fake_id", "testfile.txt", "content"
         )
 
     @pytest.mark.asyncio
@@ -204,9 +203,7 @@ class TestServer:
         self.server.file_manager = MagicMock()
         self.server.file_manager.create_file.return_value = (True, None)
 
-        request = Protocol.create_message(
-            "CREATE_FILE", {"filename": "newfile.txt"}
-        )
+        request = Protocol.create_message("CREATE_FILE", {"filename": "newfile.txt"})
 
         await self.server.handle_request(
             Protocol.parse_request(request), self.websocket_mock
@@ -216,9 +213,7 @@ class TestServer:
             "CREATE_FILE", {"status": "success"}
         )
 
-        self.websocket_mock.send.assert_called_once_with(
-            json.dumps(expected_response)
-        )
+        self.websocket_mock.send.assert_called_once_with(json.dumps(expected_response))
 
     @pytest.mark.asyncio
     async def test_create_file_error(self, setup):
@@ -228,9 +223,7 @@ class TestServer:
             "File already exists",
         )
 
-        request = Protocol.create_message(
-            "CREATE_FILE", {"filename": "newfile.txt"}
-        )
+        request = Protocol.create_message("CREATE_FILE", {"filename": "newfile.txt"})
 
         await self.server.handle_request(
             Protocol.parse_request(request), self.websocket_mock
@@ -244,13 +237,9 @@ class TestServer:
 
     @pytest.mark.asyncio
     async def test_delete_file_success(self, setup):
-        self.server.file_manager.delete_file = MagicMock(
-            return_value=(True, None)
-        )
+        self.server.file_manager.delete_file = MagicMock(return_value=(True, None))
 
-        request = Protocol.create_message(
-            "DELETE_FILE", {"filename": "testfile.txt"}
-        )
+        request = Protocol.create_message("DELETE_FILE", {"filename": "testfile.txt"})
 
         await self.server.handle_request(
             Protocol.parse_request(request), self.websocket_mock
@@ -268,9 +257,7 @@ class TestServer:
             return_value=(False, "File not found")
         )
 
-        request = Protocol.create_message(
-            "DELETE_FILE", {"filename": "testfile.txt"}
-        )
+        request = Protocol.create_message("DELETE_FILE", {"filename": "testfile.txt"})
 
         await self.server.handle_request(
             Protocol.parse_request(request), self.websocket_mock
@@ -286,9 +273,7 @@ class TestServer:
     async def test_close_file(self, setup):
         self.server.session_manager.stop_session = AsyncMock()
 
-        request = Protocol.create_message(
-            "CLOSE_FILE", {"filename": "testfile.txt"}
-        )
+        request = Protocol.create_message("CLOSE_FILE", {"filename": "testfile.txt"})
 
         await self.server.handle_request(
             Protocol.parse_request(request), self.websocket_mock
@@ -331,14 +316,16 @@ class TestServer:
 
         server.user_sessions[websocket_mock] = "test_user"
         await server.handle_request(
-            {"command": "GRANT_ACCESS",
-             "data": {"user": "host_user", "filename": "file1.txt"}},
+            {
+                "command": "GRANT_ACCESS",
+                "data": {"user": "host_user", "filename": "file1.txt"},
+            },
             websocket_mock,
         )
 
-        server.file_manager.grant_access.assert_called_with("host_user",
-                                                            "test_user",
-                                                            "file1.txt")
+        server.file_manager.grant_access.assert_called_with(
+            "host_user", "test_user", "file1.txt"
+        )
         websocket_mock.send.assert_called_with(
             '{"type": "GRANT_ACCESS", "data": {"answer": "Access granted"}}'
         )
@@ -361,18 +348,19 @@ class TestServer:
 
         server.user_sessions[websocket_mock] = "test_user"
         await server.handle_request(
-            {"command": "REMOVE_ACCESS",
-             "data": {"user": "host_user", "filename": "file1.txt"}},
+            {
+                "command": "REMOVE_ACCESS",
+                "data": {"user": "host_user", "filename": "file1.txt"},
+            },
             websocket_mock,
         )
 
-        server.file_manager.remove_access.assert_called_with("host_user",
-                                                             "test_user",
-                                                             "file1.txt")
+        server.file_manager.remove_access.assert_called_with(
+            "host_user", "test_user", "file1.txt"
+        )
         websocket_mock.send.assert_called_with(
             '{"type": "REMOVE_ACCESS", "data": {"answer": "Access removed"}}'
         )
-
 
     @pytest.mark.asyncio
     @patch("Server.server.Protocol")
@@ -393,14 +381,14 @@ class TestServer:
         server.user_sessions[websocket_mock] = "test_user"
         await server.handle_request(
             {"command": "CREATE_FILE", "data": {"filename": "new_file.txt"}},
-            websocket_mock
+            websocket_mock,
         )
 
-        server.file_manager.create_file.assert_called_with("test_user",
-                                                           "new_file.txt")
+        server.file_manager.create_file.assert_called_with("test_user", "new_file.txt")
         websocket_mock.send.assert_called_with(
             '{"type": "CREATE_FILE", "data": {"status": "success"}}'
         )
+
 
 if __name__ == "__main__":
     pytest.main()

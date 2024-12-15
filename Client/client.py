@@ -5,7 +5,7 @@ from InquirerPy import inquirer
 from rich.console import Console
 from rich.table import Table
 from Shared.protocol import Protocol
-from Editor.Editor import Editor
+from Editor.editor import Editor
 
 
 class Client:
@@ -37,24 +37,21 @@ class Client:
 
     async def login(self, websocket):
         username = await aioconsole.ainput("Enter username: ")
-        await websocket.send(
-            Protocol.create_message("LOGIN", {"username": username})
-        )
+        await websocket.send(Protocol.create_message("LOGIN", {"username": username}))
         try:
             response = await asyncio.wait_for(websocket.recv(), timeout=5)
             result = Protocol.parse_response(response)
             if result["data"]["status"] == "success":
                 self.user_id = result["data"]["user_id"]
                 self.console.print(
-                    f"{username} logged in successfully with {self.user_id}", style="#00A6A6"
+                    f"{username} logged in successfully with {self.user_id}",
+                    style="#00A6A6",
                 )
             else:
                 self.console.print(f"Login failed with {self.user_id}", style="#F08700")
 
         except asyncio.TimeoutError:
-            self.console.print(
-                f"Login timed out. Please try again.", style="#F08700"
-            )
+            self.console.print("Login timed out. Please try again.", style="#F08700")
         except Exception as e:
             print(f"An error occurred: {e}")
 
@@ -72,6 +69,7 @@ class Client:
                     {"name": "View change history", "value": "6"},
                     {"name": "Grant access to file", "value": "7"},
                     {"name": "Remove access to file", "value": "8"},
+                    {"name": "Help (Editor commands)", "value": "help"},
                     {"name": "Exit", "value": "9"},
                 ],
                 default="1",
@@ -102,6 +100,13 @@ class Client:
             if command == "8":
                 file_list = await self.get_files(websocket)
                 await self.remove_access(websocket, file_list)
+            if command == "help":
+                self.console.print("\nEditor commands:", style="#61afef")
+                self.console.print(" ctrl + E: Start/end selection mode")
+                self.console.print(" ctrl + U: Copy selected area")
+                self.console.print(" ctrl + V: Paste from clipboard")
+                self.console.print(" ctrl + X: Cancel change")
+                self.console.print(" ESC: Save the file and exit the edit mode")
             if command == "9":
                 self.console.print("Exiting...", style="#61afef")
                 break
@@ -109,20 +114,22 @@ class Client:
     async def get_files(self, websocket):
         await websocket.send(Protocol.create_message("GET_FILES"))
         response = await websocket.recv()
-        print("Response is:", response)
         file_list = Protocol.parse_response(response)["data"].get("files")
-        print("file list is:", file_list)
         if not file_list:
-            self.console.print("No files found in the folder.",
-                               style="#F08700")
+            self.console.print("No files found in the folder.", style="#F08700")
             return None
         return file_list
 
     async def open_file(self, websocket, file_list):
         selected_file = await inquirer.select(
-            message="Choose a file to open:",
-            choices=[{"name": file, "value": file} for file in file_list],
+            message="Choose a file to open: ",
+            choices=[{"name": file, "value": file} for file in file_list]
+            + [{"name": "Cancel", "value": "cancel"}],
         ).execute_async()
+
+        if selected_file == "cancel":
+            self.console.print("Returning to the main menu.", style="#00A6A6")
+            return
 
         user_id = self.user_id
         host_id = user_id
@@ -134,7 +141,10 @@ class Client:
             filename = selected_file
 
         await websocket.send(
-            Protocol.create_message("OPEN_FILE", {"filename": filename, "user_id": user_id, "host_id": host_id})
+            Protocol.create_message(
+                "OPEN_FILE",
+                {"filename": filename, "user_id": user_id, "host_id": host_id},
+            )
         )
         response = await websocket.recv()
         result = Protocol.parse_response(response)
@@ -147,15 +157,26 @@ class Client:
             for line in content:
                 self.console.print(line)
         else:
-            self.console.print(
-                f"Error: {result['data']['error']}", style="#F08700"
-            )
+            self.console.print(f"Error: {result['data']['error']}", style="#F08700")
         await websocket.send(
             Protocol.create_message("CLOSE_FILE", {"filename": filename})
         )
 
     async def create_file(self, websocket):
+        choice = await inquirer.select(
+            message="Enter a new file name or choose 'Cancel' to go back:",
+            choices=[
+                {"name": "Cancel", "value": "cancel"},
+                {"name": "Proceed", "value": "proceed"},
+            ],
+        ).execute_async()
+
+        if choice == "cancel":
+            self.console.print("Returning to the main menu.", style="#00A6A6")
+            return
+
         filename = await aioconsole.ainput("Enter new file name: ")
+
         await websocket.send(
             Protocol.create_message("CREATE_FILE", {"filename": filename})
         )
@@ -174,8 +195,13 @@ class Client:
     async def delete_file(self, websocket, file_list):
         selected_file = await inquirer.select(
             message="Choose a file to delete: ",
-            choices=[{"name": file, "value": file} for file in file_list],
+            choices=[{"name": file, "value": file} for file in file_list]
+            + [{"name": "Cancel", "value": "cancel"}],
         ).execute_async()
+
+        if selected_file == "cancel":
+            self.console.print("Returning to the main menu.", style="#00A6A6")
+            return
 
         if isinstance(selected_file, list):
             filename = selected_file[0]
@@ -218,7 +244,9 @@ class Client:
 
             return user
         else:
-            self.console.print(f'Error fetching users: {result["data"].get("error", "Unknown error")}.", style="#F08700')
+            self.console.print(
+                f'Error fetching users: {result["data"].get("error", "Unknown error")}.", style="#F08700'
+            )
             return None
 
     async def grant_access(self, websocket, file_list):
@@ -228,8 +256,13 @@ class Client:
 
         selected_file = await inquirer.select(
             message=f"Choose a file to grant access to {user}:",
-            choices=[{"name": file, "value": file} for file in file_list],
+            choices=[{"name": file, "value": file} for file in file_list]
+            + [{"name": "Cancel", "value": "cancel"}],
         ).execute_async()
+
+        if selected_file == "cancel":
+            self.console.print("Returning to the main menu.", style="#00A6A6")
+            return
 
         if isinstance(selected_file, list):
             filename = selected_file[0]
@@ -237,7 +270,9 @@ class Client:
             filename = selected_file
 
         await websocket.send(
-            Protocol.create_message("GRANT_ACCESS", {"user": user, "filename": filename})
+            Protocol.create_message(
+                "GRANT_ACCESS", {"user": user, "filename": filename}
+            )
         )
         response = await websocket.recv()
         result = Protocol.parse_response(response)
@@ -245,14 +280,18 @@ class Client:
 
     async def remove_access(self, websocket, file_list):
         if not file_list:
-            self.console.print("You don't have any files.",
-                               style="#F08700")
+            self.console.print("You don't have any files.", style="#F08700")
             return
 
         selected_file = await inquirer.select(
             message="Choose a file to remove access: ",
-            choices=[{"name": file, "value": file} for file in file_list],
+            choices=[{"name": file, "value": file} for file in file_list]
+            + [{"name": "Cancel", "value": "cancel"}],
         ).execute_async()
+
+        if selected_file == "cancel":
+            self.console.print("Returning to the main menu.", style="#00A6A6")
+            return
 
         if isinstance(selected_file, list):
             filename = selected_file[0]
@@ -263,16 +302,25 @@ class Client:
         if not user:
             return
 
-        await websocket.send(Protocol.create_message("REMOVE_ACCESS", {"filename": filename, "user": user}))
+        await websocket.send(
+            Protocol.create_message(
+                "REMOVE_ACCESS", {"filename": filename, "user": user}
+            )
+        )
         response = await websocket.recv()
         result = Protocol.parse_response(response)
         self.console.print(result["data"]["answer"])
 
     async def edit_file(self, websocket, file_list):
         selected_file = await inquirer.select(
-            message=f"Choose a file to edit: ",
-            choices=[{"name": file, "value": file} for file in file_list],
+            message="Choose a file to edit: ",
+            choices=[{"name": file, "value": file} for file in file_list]
+            + [{"name": "Cancel", "value": "cancel"}],
         ).execute_async()
+
+        if selected_file == "cancel":
+            self.console.print("Returning to the main menu.", style="#00A6A6")
+            return
 
         user_id = self.user_id
         host_id = user_id
@@ -286,7 +334,10 @@ class Client:
         print("host_id:", host_id)
 
         await websocket.send(
-            Protocol.create_message("OPEN_FILE", {"filename": filename, "user_id": user_id, "host_id": host_id})
+            Protocol.create_message(
+                "OPEN_FILE",
+                {"filename": filename, "user_id": user_id, "host_id": host_id},
+            )
         )
         response = await websocket.recv()
         result = Protocol.parse_response(response)
@@ -313,8 +364,13 @@ class Client:
     async def get_history(self, websocket, file_list):
         selected_file = await inquirer.select(
             message="Choose a file to view history: ",
-            choices=[{"name": file, "value": file} for file in file_list],
+            choices=[{"name": file, "value": file} for file in file_list]
+            + [{"name": "Cancel", "value": "cancel"}],
         ).execute_async()
+
+        if selected_file == "cancel":
+            self.console.print("Returning to the main menu.", style="#00A6A6")
+            return
 
         if isinstance(selected_file, list):
             filename = selected_file[0]
@@ -328,16 +384,15 @@ class Client:
         result = Protocol.parse_response(response)
         if result["data"]["status"] == "success":
             history = result["data"].get("history", [])
-            self.display_history(history)
+            if history is None:
+                self.console.print("No history found for this file.", style="#EFCA08")
+            else:
+                self.display_history(history)
         else:
-            self.console.print(
-                "No history found for this file.", style="#EFCA08"
-            )
+            self.console.print("No history found for this file.", style="#EFCA08")
 
     def display_history(self, history):
-        table = Table(
-            title="Changes history", show_header=True
-        )
+        table = Table(title="Changes history", show_header=True)
         table.add_column("User ID", style="white")
         table.add_column("Time", style="white")
         table.add_column("Operation", style="white")

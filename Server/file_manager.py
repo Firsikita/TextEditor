@@ -20,8 +20,8 @@ class FileManager:
 
         file_host_pairs = set()
         for user, user_data in additional_files.items():
-            for host, host_data in user_data['host_access'].items():
-                for file_name in host_data['files']:
+            for host, host_data in user_data["host_access"].items():
+                for file_name in host_data["files"]:
                     file_host_pairs.add((file_name, host))
 
         try:
@@ -76,7 +76,9 @@ class FileManager:
         user_folder = user_id + "'s_files"
         filepath = os.path.join(self.base_dir, user_folder, filename)
 
-        for host_id, host_data in user_info.get(str(user_id), {}).get("host_access", {}).items():
+        for host_id, host_data in (
+            user_info.get(str(user_id), {}).get("host_access", {}).items()
+        ):
             if filename in host_data["files"]:
                 host_folder = host_id + "'s_files"
                 filepath = os.path.join(self.base_dir, host_folder, filename)
@@ -101,9 +103,15 @@ class FileManager:
     def validate_access(self, user_id, host_id, filename):
         user_info = self.load_user_information()
         host_access = user_info.get(str(user_id), {}).get("host_access", {})
-        if str(host_id) not in host_access or filename not in \
-                host_access[str(host_id)]["files"]:
-            return False, None, f"You do not have access to the file '{filename}' of host {host_id}."
+        if (
+            str(host_id) not in host_access
+            or filename not in host_access[str(host_id)]["files"]
+        ):
+            return (
+                False,
+                None,
+                f"You do not have access to the file '{filename}' of host {host_id}.",
+            )
 
         host_folder = host_id + "'s_files"
         filepath = os.path.join(self.base_dir, host_folder, filename)
@@ -116,10 +124,15 @@ class FileManager:
             return f"User {user_id} does not have any access records."
 
         if str(host_id) not in user_info[str(user_id)]["host_access"]:
-            return f"User {user_id} does not have access to any files from host {host_id}."
+            return (
+                f"User {user_id} does not have access to any files from host {host_id}."
+            )
 
-        if filename not in user_info[str(user_id)]["host_access"][str(host_id)]["files"]:
-            return f"User {user_id} does not have access to file \"{filename}\" from host {host_id}."
+        if (
+            filename
+            not in user_info[str(user_id)]["host_access"][str(host_id)]["files"]
+        ):
+            return f'User {user_id} does not have access to file "{filename}" from host {host_id}.'
 
         user_info[str(user_id)]["host_access"][str(host_id)]["files"].remove(filename)
 
@@ -128,8 +141,7 @@ class FileManager:
 
         self.save_user_information(user_info)
 
-        return f"Access to file \"{filename}\" for user {user_id} from host {host_id} removed."
-
+        return f'Access to file "{filename}" for user {user_id} from host {host_id} removed.'
 
     def grant_access(self, user_id, host_id, filename):
         clients_base = self.load_json(self.clients_base_dir)
@@ -146,24 +158,25 @@ class FileManager:
             user_info[str(user_id)] = {"host_access": {}}
 
         if str(host_id) not in user_info[str(user_id)]["host_access"]:
-            user_info[str(user_id)]["host_access"][str(host_id)] = {
-                "files": []}
+            user_info[str(user_id)]["host_access"][str(host_id)] = {"files": []}
 
-        if filename not in \
-                user_info[str(user_id)]["host_access"][str(host_id)]["files"]:
-            user_info[str(user_id)]["host_access"][str(host_id)][
-                "files"].append(filename)
+        if (
+            filename
+            not in user_info[str(user_id)]["host_access"][str(host_id)]["files"]
+        ):
+            user_info[str(user_id)]["host_access"][str(host_id)]["files"].append(
+                filename
+            )
 
         self.save_user_information(user_info)
 
-        return f"Access granted to file \"{filename}\" for user: {user_id}"
+        return f'Access granted to file "{filename}" for user: {user_id}'
 
     def save_user_information(self, user_info):
         with open(self.user_info_dir, "w") as f:
             json.dump(user_info, f, indent=4)
 
     def append_user(self, user_id):
-        user_base = []
         user_base = self.load_json(self.clients_base_dir)
 
         if not any(user.get("User ID") == user_id for user in user_base):
@@ -187,7 +200,7 @@ class FileManager:
         filename = filename.removesuffix(".txt")
         history_file = f"./Server/files_change_history/{filename}.json"
 
-        with open(history_file, 'w') as file:
+        with open(history_file, "w") as file:
             json.dump(all_history, file, indent=4)
 
     @staticmethod
@@ -196,7 +209,7 @@ class FileManager:
         history_file = f"./Server/files_change_history/{filename}.json"
 
         if os.path.exists(history_file):
-            with open(history_file, 'r') as file:
+            with open(history_file, "r") as file:
                 try:
                     history = json.load(file)
                     return history

@@ -21,9 +21,7 @@ class Server:
 
     async def echo(self, websocket):
         self.clients.add(websocket)
-        print(
-            f"New client connected: {websocket}. Total users: {len(self.clients)}"
-        )
+        print(f"New client connected: {websocket}. Total users: {len(self.clients)}")
         try:
             async for message in websocket:
                 request = Protocol.parse_request(message)
@@ -35,12 +33,12 @@ class Server:
             print(f"Connection closed: {e}")
         finally:
             self.clients.remove(websocket)
-            print(
-                f"Client disconnected: {websocket}. Total users: {len(self.clients)}"
-            )
+            print(f"Client disconnected: {websocket}. Total users: {len(self.clients)}")
 
     async def handle_request(self, request, websocket):
-        user_id = self.user_sessions[websocket] if websocket in self.user_sessions else None
+        user_id = (
+            self.user_sessions[websocket] if websocket in self.user_sessions else None
+        )
         command = request["command"]
         response = None
 
@@ -83,14 +81,22 @@ class Server:
             print(f"opening file for user {user_id} and host {host_id}")
 
             if user_id != host_id:
-                success, host_path, error = self.file_manager.validate_access(user_id, host_id, filename)
-                print(f"validation for {user_id} and host {host_id}: status - {success}, error - {error}")
+                success, host_path, error = self.file_manager.validate_access(
+                    user_id, host_id, filename
+                )
+                print(
+                    f"validation for {user_id} and host {host_id}: status - {success}, error - {error}"
+                )
                 if not success:
-                    return await websocket.send(json.dumps(Protocol.create_response("ERROR", {"error": error})))
+                    return await websocket.send(
+                        json.dumps(Protocol.create_response("ERROR", {"error": error}))
+                    )
 
             if filename not in self.session_manager.open_files:
                 success, content = self.file_manager.open_file(host_id, filename)
-                self.history_changes[filename] = self.file_manager.load_history(filename)
+                self.history_changes[filename] = self.file_manager.load_history(
+                    filename
+                )
 
                 if success:
                     self.session_manager.start_session(filename, websocket)
@@ -131,9 +137,7 @@ class Server:
 
         elif command == "DELETE_FILE":
             filename = request["data"]["filename"]
-            self.session_manager.stop_session(
-                request["data"]["filename"], websocket
-            )
+            self.session_manager.stop_session(request["data"]["filename"], websocket)
             success, error = self.file_manager.delete_file(user_id, filename)
             if success:
                 response = Protocol.create_response(
@@ -150,12 +154,12 @@ class Server:
             operation = request["data"]["operation"]
 
             self.session_manager.start_session(filename, websocket)
-            new_operation = self.session_manager.apply_operation(filename, user_id, operation, self.history_changes)
+            new_operation = self.session_manager.apply_operation(
+                filename, user_id, operation, self.history_changes
+            )
             content = self.session_manager.get_content(filename)
 
-            self.file_manager.save_file(
-                user_id, filename, content
-            )
+            self.file_manager.save_file(user_id, filename, content)
 
             if new_operation is None:
                 await self.session_manager.share_update(
@@ -191,14 +195,18 @@ class Server:
         elif command == "GET_REGISTERED_USERS":
             try:
                 users = self.file_manager.get_all_registered_users()
-                response = Protocol.create_response("GET_REGISTERED_USERS", {"status": "success", "users": users})
+                response = Protocol.create_response(
+                    "GET_REGISTERED_USERS",
+                    {"status": "success", "users": users},
+                )
             except Exception as e:
-                response = Protocol.create_response("GET_REGISTERED_USERS", {"status": "error", "error": str(e)})
+                response = Protocol.create_response(
+                    "GET_REGISTERED_USERS",
+                    {"status": "error", "error": str(e)},
+                )
 
         else:
-            response = Protocol.create_response(
-                "ERROR", {"error": "Unknown command"}
-            )
+            response = Protocol.create_response("ERROR", {"error": "Unknown command"})
 
         if response:
             await websocket.send(json.dumps(response))

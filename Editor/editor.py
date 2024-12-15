@@ -3,6 +3,7 @@ import asyncio
 import time
 import pyperclip
 from Shared.protocol import Protocol
+
 try:
     from message_sender import MessageSender
     from cursor_mover import CursorMover
@@ -41,75 +42,82 @@ class Editor:
         await websocket.send(message)
 
     async def listen_for_update(
-            self, websocket, stdscr, current_content: list[str], cursor_y: int, cursor_x: int
+        self,
+        websocket,
+        stdscr,
+        current_content: list[str],
+        cursor_y: int,
+        cursor_x: int,
     ):
         try:
             while True:
                 message = await websocket.recv()
-                print("***listen",message)
                 update = Protocol.parse_response(message)
                 operation = update["data"]["operation"]
-                start_y, start_x = operation["start_pos"]["y"], \
-                    operation["start_pos"]["x"]
+                start_y, start_x = (
+                    operation["start_pos"]["y"],
+                    operation["start_pos"]["x"],
+                )
 
                 if operation["op_type"] == "insert":
                     insert_text = operation["text"]
-                    print("cur content before insert", current_content)
                     close_line = current_content[start_y][start_x:]
                     for i in range(len(insert_text)):
                         if i == 0:
-                            current_content[start_y] = current_content[
-                                                           start_y][:start_x] + \
-                                                       insert_text[i]
+                            current_content[start_y] = (
+                                current_content[start_y][:start_x] + insert_text[i]
+                            )
                         else:
                             current_content.insert(start_y + i, insert_text[i])
-                    current_content[
-                        start_y + len(insert_text) - 1] += close_line
-                    print("cur content after insert", current_content)
+                    current_content[start_y + len(insert_text) - 1] += close_line
                 elif operation["op_type"] == "delete":
-                    print("***delete", operation)
-                    end_y, end_x = operation["end_pos"]["y"], \
-                    operation["end_pos"]["x"]
+                    end_y, end_x = (
+                        operation["end_pos"]["y"],
+                        operation["end_pos"]["x"],
+                    )
                     close_line = current_content[end_y][end_x:]
                     if start_y == end_y:
-                        current_content[start_y] = current_content[start_y][
-                                                   :start_x] + close_line
+                        current_content[start_y] = (
+                            current_content[start_y][:start_x] + close_line
+                        )
                     else:
                         for i in range(start_y + 1, end_y + 1):
                             current_content.pop(i)
-                        current_content[start_y] = current_content[start_y][
-                                                   :start_x] + close_line
-                    print("cur content after delete", current_content)
+                        current_content[start_y] = (
+                            current_content[start_y][:start_x] + close_line
+                        )
 
                 elif operation["op_type"] == "new line":
                     new_line = current_content[start_y][start_x:]
-                    current_content[start_y] = current_content[start_y][
-                                               :start_x]
+                    current_content[start_y] = current_content[start_y][:start_x]
                     current_content.insert(start_y + 1, new_line)
-                    print("cur content after new_line", current_content)
 
                 elif operation["op_type"] == "insert_text":
                     insert_text = operation["insert_text"]
-                    print("cur content BEFORE insertTEXT", current_content)
                     close_line = current_content[start_y][start_x:]
                     for i in range(len(insert_text)):
                         if i == 0:
-                            current_content[start_y] = current_content[
-                                                           start_y][:start_x] + \
-                                                       insert_text[i]
+                            current_content[start_y] = (
+                                current_content[start_y][:start_x] + insert_text[i]
+                            )
                         else:
                             current_content.insert(start_y + i, insert_text[i])
-                    current_content[
-                        start_y + len(insert_text) - 1] += close_line
-                    print("cur content after insertTEXT", current_content)
+                    current_content[start_y + len(insert_text) - 1] += close_line
 
                 self.display_text(stdscr, current_content, cursor_y, cursor_x)
 
         except asyncio.CancelledError:
             pass
 
-    def insert_text(self, websocket, filename: str, current_content: list[str],
-                    cursor_y: int, cursor_x: int, event_loop):
+    def insert_text(
+        self,
+        websocket,
+        filename: str,
+        current_content: list[str],
+        cursor_y: int,
+        cursor_x: int,
+        event_loop,
+    ):
 
         text = pyperclip.paste()
         text = text.split("\n")
@@ -117,15 +125,24 @@ class Editor:
 
         for i in range(len(text)):
             if i == 0:
-                current_content[cursor_y] = current_content[cursor_y][
-                                            :cursor_x] + text[i]
+                current_content[cursor_y] = (
+                    current_content[cursor_y][:cursor_x] + text[i]
+                )
             else:
                 current_content.insert(cursor_y + i, text[i])
-        current_content[cursor_y + len(text) - 1] = current_content[
-                                                        cursor_y + len(
-                                                            text) - 1] + close_line
+        current_content[cursor_y + len(text) - 1] = (
+            current_content[cursor_y + len(text) - 1] + close_line
+        )
 
-        self.sender.send_edit_message(websocket, filename, text, cursor_y, cursor_x, event_loop, self.user_id)
+        self.sender.send_edit_message(
+            websocket,
+            filename,
+            text,
+            cursor_y,
+            cursor_x,
+            event_loop,
+            self.user_id,
+        )
 
     @staticmethod
     def insert_enter(current_content: list[str], cursor_y: int, cursor_x: int):
@@ -135,7 +152,13 @@ class Editor:
         current_content.insert(cursor_y + 1, new_line)
 
     @staticmethod
-    def delete_piece(current_content: list[str], start_y: int, start_x: int, end_y: int, end_x: int):
+    def delete_piece(
+        current_content: list[str],
+        start_y: int,
+        start_x: int,
+        end_y: int,
+        end_x: int,
+    ):
         start_line = current_content[start_y][:start_x]
         close_line = current_content[end_y][end_x:]
         if start_y != end_y:
@@ -143,7 +166,6 @@ class Editor:
                 current_content.pop(i)
 
         current_content[start_y] = start_line + close_line
-
 
     @staticmethod
     def display_text(stdscr, current_content: list[str], cursor_y: int, cursor_x: int):
@@ -153,14 +175,25 @@ class Editor:
         stdscr.move(cursor_y, cursor_x)
 
     def curses_editor(
-            self, stdscr, content: list[str], filename: str, websocket, event_loop, stop_event
+        self,
+        stdscr,
+        content: list[str],
+        filename: str,
+        websocket,
+        event_loop,
+        stop_event,
     ):
+        import locale
+
+        locale.setlocale(locale.LC_ALL, "")
         curses.curs_set(1)
         stdscr.clear()
         stdscr.refresh()
         stdscr.nodelay(True)
         current_content = content
-        cursor_y, cursor_x = max(len(content) - 1, 0), len(content[-1]) if len(content) > 0 else 0
+        cursor_y, cursor_x = max(len(content) - 1, 0), (
+            len(content[-1]) if len(content) > 0 else 0
+        )
 
         last_input_time = time.time()
         start_y, start_x = None, None
@@ -189,21 +222,44 @@ class Editor:
 
             if key == 27:
                 if inserted_text or count_delete_char > 0:
-                    self.sender.send_edit_message(websocket, filename, inserted_text, start_y, start_x, event_loop, self.user_id)
-                    self.sender.send_delete_message(websocket, filename, end_y, end_x, start_y, start_x, count_delete_char,
-                                                    event_loop, self.user_id)
+                    self.sender.send_edit_message(
+                        websocket,
+                        filename,
+                        inserted_text,
+                        start_y,
+                        start_x,
+                        event_loop,
+                        self.user_id,
+                    )
+                    self.sender.send_delete_message(
+                        websocket,
+                        filename,
+                        end_y,
+                        end_x,
+                        start_y,
+                        start_x,
+                        count_delete_char,
+                        event_loop,
+                        self.user_id,
+                    )
 
                 asyncio.run_coroutine_threadsafe(
-                    self.save_content_file(
-                        filename, current_content, websocket
-                    ),
+                    self.save_content_file(filename, current_content, websocket),
                     event_loop,
                 )
                 break
 
             elif key in (curses.KEY_BACKSPACE, 8, 127):
                 if inserted_text:
-                    self.sender.send_edit_message(websocket, filename, inserted_text, start_y, start_x, event_loop, self.user_id)
+                    self.sender.send_edit_message(
+                        websocket,
+                        filename,
+                        inserted_text,
+                        start_y,
+                        start_x,
+                        event_loop,
+                        self.user_id,
+                    )
                     start_x, start_y = None, None
                     inserted_text.clear()
 
@@ -211,8 +267,10 @@ class Editor:
                     start_y, start_x = cursor_y, cursor_x
 
                 if cursor_x > 0:
-                    current_content[cursor_y] = current_content[cursor_y][:cursor_x - 1] + current_content[cursor_y][
-                                                                                           cursor_x:]
+                    current_content[cursor_y] = (
+                        current_content[cursor_y][: cursor_x - 1]
+                        + current_content[cursor_y][cursor_x:]
+                    )
                     cursor_x -= 1
                     end_x = cursor_x
                     update_line(cursor_y)
@@ -233,7 +291,14 @@ class Editor:
 
             elif key == 10:
                 self.insert_enter(current_content, cursor_y, cursor_x)
-                self.sender.send_new_line(websocket, filename, cursor_y, cursor_x, event_loop, self.user_id)
+                self.sender.send_new_line(
+                    websocket,
+                    filename,
+                    cursor_y,
+                    cursor_x,
+                    event_loop,
+                    self.user_id,
+                )
 
                 cursor_y += 1
                 cursor_x = 0
@@ -241,12 +306,16 @@ class Editor:
                 self.display_text(stdscr, current_content, cursor_y, cursor_x)
 
             elif key == curses.KEY_LEFT:
-                cursor_x, cursor_y = self.cursor.left(cursor_x, cursor_y, current_content)
+                cursor_x, cursor_y = self.cursor.left(
+                    cursor_x, cursor_y, current_content
+                )
                 stdscr.move(cursor_y, cursor_x)
                 stdscr.refresh()
 
             elif key == curses.KEY_RIGHT:
-                cursor_x, cursor_y = self.cursor.right(cursor_x, cursor_y, current_content)
+                cursor_x, cursor_y = self.cursor.right(
+                    cursor_x, cursor_y, current_content
+                )
                 stdscr.move(cursor_y, cursor_x)
                 stdscr.refresh()
 
@@ -256,13 +325,25 @@ class Editor:
                 stdscr.refresh()
 
             elif key == curses.KEY_DOWN:
-                cursor_x, cursor_y = self.cursor.down(cursor_x, cursor_y, current_content)
+                cursor_x, cursor_y = self.cursor.down(
+                    cursor_x, cursor_y, current_content
+                )
                 stdscr.move(cursor_y, cursor_x)
                 stdscr.refresh()
 
             elif key >= 32:
                 if count_delete_char > 0:
-                    self.sender.send_delete_message(websocket, filename, end_y, end_x, start_y, start_x, count_delete_char, event_loop, self.user_id)
+                    self.sender.send_delete_message(
+                        websocket,
+                        filename,
+                        end_y,
+                        end_x,
+                        start_y,
+                        start_x,
+                        count_delete_char,
+                        event_loop,
+                        self.user_id,
+                    )
                     count_delete_char = 0
 
                 if not inserted_text:
@@ -271,7 +352,11 @@ class Editor:
                 while len(current_content) <= cursor_y:
                     current_content.append("")
 
-                current_content[cursor_y] = current_content[cursor_y][:cursor_x] + chr(key) + current_content[cursor_y][cursor_x:]
+                current_content[cursor_y] = (
+                    current_content[cursor_y][:cursor_x]
+                    + chr(key)
+                    + current_content[cursor_y][cursor_x:]
+                )
                 cursor_x += 1
                 update_line(cursor_y)
 
@@ -282,7 +367,7 @@ class Editor:
 
                 last_input_time = time.time()
 
-            elif key == 5: #ctrl + e выделение
+            elif key == 5:  # ctrl + e выделение
                 self.selection.start(cursor_y, cursor_x)
                 while True:
                     key = stdscr.getch()
@@ -295,30 +380,38 @@ class Editor:
 
                     elif key == curses.KEY_LEFT:
                         if cursor_x - 1 >= 0:
-                            cursor_x, cursor_y = self.cursor.left(cursor_x,
-                                                                  cursor_y,
-                                                                  current_content)
-                            self.selection.left(stdscr, cursor_x, cursor_y, current_content)
-                            #cursor_x, cursor_y = self.cursor.left(cursor_x, cursor_y, current_content)
+                            cursor_x, cursor_y = self.cursor.left(
+                                cursor_x, cursor_y, current_content
+                            )
+                            self.selection.left(
+                                stdscr, cursor_x, cursor_y, current_content
+                            )
                             stdscr.move(cursor_y, cursor_x)
                             stdscr.refresh()
 
-
                     elif key == curses.KEY_RIGHT:
                         if cursor_x + 1 <= len(current_content[cursor_y]):
-                            self.selection.right(stdscr, cursor_x, cursor_y, current_content)
-                            cursor_x, cursor_y = self.cursor.right(cursor_x, cursor_y, current_content)
+                            self.selection.right(
+                                stdscr, cursor_x, cursor_y, current_content
+                            )
+                            cursor_x, cursor_y = self.cursor.right(
+                                cursor_x, cursor_y, current_content
+                            )
                             stdscr.move(cursor_y, cursor_x)
                             stdscr.refresh()
 
                     elif key == curses.KEY_UP:
-                        cursor_x, cursor_y = self.cursor.up(cursor_x, cursor_y, current_content)
+                        cursor_x, cursor_y = self.cursor.up(
+                            cursor_x, cursor_y, current_content
+                        )
                         self.selection.up(stdscr, cursor_x, cursor_y, current_content)
                         stdscr.move(cursor_y, cursor_x)
                         stdscr.refresh()
 
                     elif key == curses.KEY_DOWN:
-                        cursor_x, cursor_y = self.cursor.down(cursor_x, cursor_y, current_content)
+                        cursor_x, cursor_y = self.cursor.down(
+                            cursor_x, cursor_y, current_content
+                        )
                         self.selection.down(stdscr, cursor_x, cursor_y, current_content)
                         stdscr.move(cursor_y, cursor_x)
                         stdscr.refresh()
@@ -329,24 +422,63 @@ class Editor:
                         end_y = self.selection.get_end_selection_y()
                         end_x = self.selection.get_end_selection_x()
 
-                        self.delete_piece(current_content, start_y, start_x, end_y, end_x)
-                        self.sender.send_delete_message(websocket, filename, start_y, start_x, end_y, end_x, 1, event_loop, self.user_id)
+                        self.delete_piece(
+                            current_content, start_y, start_x, end_y, end_x
+                        )
+                        self.sender.send_delete_message(
+                            websocket,
+                            filename,
+                            start_y,
+                            start_x,
+                            end_y,
+                            end_x,
+                            1,
+                            event_loop,
+                            self.user_id,
+                        )
                         self.display_text(stdscr, current_content, cursor_y, cursor_x)
 
-                    elif key == 21: #ctrl + u копирование
+                    elif key == 21:  # ctrl + u копирование
                         text = "\n".join(self.selection.get_clipboard())
                         pyperclip.copy(text)
 
-            elif key == 22: #ctrl + v вставка
-                self.insert_text(websocket, filename, current_content, cursor_y, cursor_x, event_loop)
+            elif key == 22:  # ctrl + v вставка
+                self.insert_text(
+                    websocket,
+                    filename,
+                    current_content,
+                    cursor_y,
+                    cursor_x,
+                    event_loop,
+                )
                 self.display_text(stdscr, current_content, cursor_y, cursor_x)
 
-            elif key == 24: #ctrl + x отмена действия
-                self.sender.cancel_changes(websocket, filename, event_loop, self.user_id)
+            elif key == 24:  # ctrl + x отмена действия
+                self.sender.cancel_changes(
+                    websocket, filename, event_loop, self.user_id
+                )
 
             if (time.time() - last_input_time) > 1:
-                self.sender.send_edit_message(websocket, filename, inserted_text, start_y, start_x, event_loop, self.user_id)
-                self.sender.send_delete_message(websocket, filename, end_y, end_x, start_y, start_x, count_delete_char, event_loop, self.user_id)
+                self.sender.send_edit_message(
+                    websocket,
+                    filename,
+                    inserted_text,
+                    start_y,
+                    start_x,
+                    event_loop,
+                    self.user_id,
+                )
+                self.sender.send_delete_message(
+                    websocket,
+                    filename,
+                    end_y,
+                    end_x,
+                    start_y,
+                    start_x,
+                    count_delete_char,
+                    event_loop,
+                    self.user_id,
+                )
                 inserted_text.clear()
                 start_x, start_y = None, None
                 count_delete_char = 0

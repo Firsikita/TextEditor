@@ -5,7 +5,7 @@ from Server.server import Server
 
 async def run_server():
     server = Server()
-    async with websockets.serve(server.echo, "localhost", 8765) as server:
+    async with websockets.serve(server.echo, "localhost", 8765):
         print("Server started on ws://localhost:8765")
         await asyncio.Future()
 
