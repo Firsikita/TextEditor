@@ -1,0 +1,158 @@
+[
+    {
+        "user_id": "irina",
+        "time": "2024-12-16 00:31:49.021271",
+        "operation": {
+            "op_type": "insert",
+            "start_pos": {
+                "y": 0,
+                "x": 0
+            },
+            "length": 1,
+            "text": [
+                "hell"
+            ],
+            "end_pos": {
+                "y": 0,
+                "x": 4
+            },
+            "user_id": null
+        }
+    },
+    {
+        "user_id": "irina",
+        "time": "2024-12-16 00:31:50.061051",
+        "operation": {
+            "op_type": "delete",
+            "start_pos": {
+                "y": 0,
+                "x": 0
+            },
+            "end_pos": {
+                "y": 0,
+                "x": 4
+            },
+            "text": [
+                "hell"
+            ]
+        }
+    },
+    {
+        "user_id": "irina",
+        "time": "2024-12-16 00:31:52.015507",
+        "operation": {
+            "op_type": "insert",
+            "start_pos": {
+                "y": 0,
+                "x": 0
+            },
+            "length": 1,
+            "text": [
+                "abcdef"
+            ],
+            "end_pos": {
+                "y": 0,
+                "x": 6
+            },
+            "user_id": null
+        }
+    },
+    {
+        "user_id": "irina",
+        "time": "2024-12-16 00:32:16.203011",
+        "operation": {
+            "op_type": "delete",
+            "start_pos": {
+                "y": 0,
+                "x": 0
+            },
+            "end_pos": {
+                "y": 2,
+                "x": 0
+            },
+            "text": [
+                "abc",
+                "",
+                ""
+            ]
+        }
+    },
+    {
+        "user_id": "irina",
+        "time": "2024-12-16 00:32:22.620662",
+        "operation": {
+            "op_type": "insert",
+            "start_pos": {
+                "y": 0,
+                "x": 0
+            },
+            "length": 1,
+            "text": [
+                "abv"
+            ],
+            "end_pos": {
+                "y": 0,
+                "x": 3
+            },
+            "user_id": null
+        }
+    },
+    {
+        "user_id": "irina",
+        "time": "2024-12-16 00:32:22.802947",
+        "operation": {
+            "op_type": "delete",
+            "start_pos": {
+                "y": 0,
+                "x": 2
+            },
+            "end_pos": {
+                "y": 0,
+                "x": 3
+            },
+            "text": [
+                "v"
+            ]
+        }
+    },
+    {
+        "user_id": "irina",
+        "time": "2024-12-16 00:32:23.803342",
+        "operation": {
+            "op_type": "insert",
+            "start_pos": {
+                "y": 0,
+                "x": 2
+            },
+            "length": 1,
+            "text": [
+                "c"
+            ],
+            "end_pos": {
+                "y": 0,
+                "x": 3
+            },
+            "user_id": null
+        }
+    },
+    {
+        "user_id": "irina",
+        "time": "2024-12-16 00:32:25.075878",
+        "operation": {
+            "op_type": "insert",
+            "start_pos": {
+                "y": 1,
+                "x": 0
+            },
+            "length": 1,
+            "text": [
+                "def"
+            ],
+            "end_pos": {
+                "y": 1,
+                "x": 3
+            },
+            "user_id": null
+        }
+    }
+]
