@@ -5,15 +5,7 @@ A collaborative, terminal-based text editor that supports real-time, multi-user 
 - Real-time, multi-user text editing
 - Terminal-based interface with `curses`
 - Synchronizes content across multiple clients
-
-## Requirements
-- Python 3.8+
-- `curses` library (`windows-curses` for Windows)
-- `websockets` library
-- `asyncio` library
-- `pytest` and `pytest-asyncio` for testing
-- `pyperclip` for clipboard
-- `inquirerpy`, `rich` and `aioconsole` for a nice display in the terminal
+- Restricted access to files
 
 ## Install
 1. Clone the repository
@@ -30,6 +22,16 @@ A collaborative, terminal-based text editor that supports real-time, multi-user 
 ## Run tests
 `python -m coverage run -m pytest ./tests`
 
+
+## Requirements
+- Python 3.8+
+- `curses` library (`windows-curses` for Windows)
+- `websockets` library
+- `asyncio` library
+- `pytest` and `pytest-asyncio` for testing
+- `pyperclip` for clipboard
+- `inquirerpy`, `rich` and `aioconsole` for a nice display in the terminal
+
 ## Supported Editor commands:
 * `ESC`: Save the file and exit the edit mode
 * `Backspace`: Delete the char before the cursor
@@ -40,7 +42,7 @@ A collaborative, terminal-based text editor that supports real-time, multi-user 
 * `ctrl + U`: Copy
 * `ctrl + V`: Paste
 * `ctrl + X`: Cancel change
-
+* 
 
 ## Project Structure
 ```
@@ -65,9 +67,7 @@ A collaborative, terminal-based text editor that supports real-time, multi-user 
 ├── tests/
 │   └── test_server.py         # Unit tests for the server
 │   └── test_client.py         # Unit tests for the client
-│   └── test_cursor_mover.py
-│   └── test_selection.py
-│   └── test_session_manager.py
+│   └── ...
 ├── README.md
 ├── run_server.py              # Module to setup server
 ├── run_client.py              # Module to connect as a client

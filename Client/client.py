@@ -107,6 +107,9 @@ class Client:
                 self.console.print(" ctrl + V: Paste from clipboard")
                 self.console.print(" ctrl + X: Cancel change")
                 self.console.print(" ESC: Save the file and exit the edit mode")
+                self.console.print("\nFile types:", style="#61afef")
+                self.console.print(" file.txt: Personal file / not shared")
+                self.console.print(" ['file.txt', 'User']: File owned by host User")
             if command == "9":
                 self.console.print("Exiting...", style="#61afef")
                 break
