@@ -1,8 +1,9 @@
 ## Install
 1. Clone the repository
 `git clone ...`
+kl
 `cd editordir`
-2. `pip install -r requierments.txt`
+3. `pip install -r requierments.txt`
 
 ## Usage
 1. Run the server:
