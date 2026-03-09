@@ -1,7 +1,6 @@
 ## Install
 1. Clone the repository
 `git clone ...`
-kl
 `cd editordir`
 3. `pip install -r requierments.txt`
 
